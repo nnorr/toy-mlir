@@ -5,34 +5,64 @@
     "title": "toy-mlir module layering",
     "output": "architecture.html",
     "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/nnorr/toy-mlir",
+      "provider": "github",
+      "revision": "7a495f948c5c573115236868edd4ce89c1c11dd8"
+    },
     "legend": {
       "mode": "all",
       "entries": {
-        "frontend": { "label": "Executable" },
-        "backend": { "label": "Project library" },
-        "external": { "label": "Toolchain and reference" },
-        "security": { "label": "Equivalence gate" }
+        "frontend": {
+          "label": "Executable"
+        },
+        "backend": {
+          "label": "Project library"
+        },
+        "external": {
+          "label": "Toolchain and reference"
+        },
+        "security": {
+          "label": "Equivalence gate"
+        }
       }
     },
-    "viewBox": [1160, 700],
+    "viewBox": [
+      1240,
+      628
+    ],
     "views": [
       {
         "id": "link-direction",
         "label": "Link direction",
-        "focus": ["toyc", "codegen", "passes", "dialect", "frontendlib"],
+        "focus": [
+          "toyc",
+          "codegen",
+          "passes",
+          "dialect",
+          "frontendlib"
+        ],
         "note": "Four libraries, each depending only on the ones below it."
       },
       {
         "id": "no-mlir-below",
         "label": "The front end has no MLIR",
-        "focus": ["frontendlib", "codegen", "mlir"],
-        "note": "MLIR enters at ToyDialect and above. ToyFrontend links none of it, and a test checks that."
+        "focus": [
+          "frontendlib",
+          "codegen",
+          "mlir"
+        ],
+        "note": "MLIR enters at ToyDialect. ToyFrontend links none of it, and a test checks that."
       },
       {
         "id": "equivalence",
         "label": "Equivalence gate",
-        "focus": ["gate", "toyc", "upstream"],
-        "note": "Every stage of our output is diffed against the upstream tutorial's compiler."
+        "focus": [
+          "gate",
+          "toyc",
+          "upstream"
+        ],
+        "note": "Every stage of our output is diffed against the tutorial's own compiler."
       }
     ]
   },
@@ -43,101 +73,199 @@
       "label": "toyc",
       "sublabel": "the one executable",
       "tag": "-emit picks the depth",
-      "pos": [430, 60],
-      "size": [210, 64],
-      "sources": [{ "path": "src/main.cpp", "label": "CLI and stage dispatch" }]
+      "pos": [
+        500,
+        40
+      ],
+      "size": [
+        220,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/main.cpp",
+          "label": "CLI and stage dispatch"
+        }
+      ]
     },
     {
       "id": "codegen",
       "type": "backend",
       "label": "ToyCodegen",
-      "sublabel": "AST to IR, the pipeline, every exit from MLIR",
-      "pos": [430, 200],
-      "size": [210, 76],
+      "sublabel": "AST to IR, pipeline, exits",
+      "pos": [
+        500,
+        180
+      ],
+      "size": [
+        220,
+        80
+      ],
       "sources": [
-        { "path": "src/MLIRGen.cpp" },
-        { "path": "src/Pipeline.cpp" },
-        { "path": "src/Translate.cpp" }
+        {
+          "path": "src/MLIRGen.cpp"
+        },
+        {
+          "path": "src/Pipeline.cpp"
+        },
+        {
+          "path": "src/Translate.cpp"
+        }
       ]
     },
     {
       "id": "passes",
       "type": "backend",
       "label": "ToyPasses",
-      "sublabel": "shape inference and the two lowerings",
-      "pos": [430, 340],
-      "size": [210, 76],
+      "sublabel": "shape inference, 2 lowerings",
+      "pos": [
+        500,
+        336
+      ],
+      "size": [
+        220,
+        80
+      ],
       "sources": [
-        { "path": "src/passes/ShapeInference.cpp" },
-        { "path": "src/passes/LowerToAffine.cpp" },
-        { "path": "src/passes/LowerToLLVM.cpp" }
+        {
+          "path": "src/passes/ShapeInference.cpp"
+        },
+        {
+          "path": "src/passes/LowerToAffine.cpp"
+        },
+        {
+          "path": "src/passes/LowerToLLVM.cpp"
+        }
       ]
     },
     {
       "id": "dialect",
       "type": "backend",
       "label": "ToyDialect",
-      "sublabel": "operations, !toy.struct, verifiers, folders, interfaces",
-      "pos": [430, 480],
-      "size": [210, 76],
+      "sublabel": "ops, types, folders, interfaces",
+      "pos": [
+        500,
+        492
+      ],
+      "size": [
+        220,
+        80
+      ],
       "sources": [
-        { "path": "src/dialect/Ops.cpp" },
-        { "path": "src/dialect/StructType.cpp" },
-        { "path": "src/dialect/Interfaces.cpp" }
+        {
+          "path": "src/dialect/Ops.cpp"
+        },
+        {
+          "path": "src/dialect/StructType.cpp"
+        },
+        {
+          "path": "src/dialect/Interfaces.cpp"
+        }
       ]
     },
     {
       "id": "frontendlib",
       "type": "backend",
       "label": "ToyFrontend",
-      "sublabel": "lexer, parser, AST, both dump formats",
+      "sublabel": "lexer, parser, AST, dumper",
       "tag": "links no MLIR",
-      "pos": [120, 200],
-      "size": [210, 76],
+      "pos": [
+        140,
+        180
+      ],
+      "size": [
+        220,
+        80
+      ],
       "sources": [
-        { "path": "src/Lexer.cpp" },
-        { "path": "src/Parser.cpp" },
-        { "path": "src/ASTDumper.cpp" }
+        {
+          "path": "src/Lexer.cpp"
+        },
+        {
+          "path": "src/Parser.cpp"
+        },
+        {
+          "path": "src/ASTDumper.cpp"
+        }
       ]
     },
     {
       "id": "ods",
       "type": "external",
       "label": "mlir-tblgen",
-      "sublabel": "ODS: 595 lines of TableGen in, 6,704 lines of C++ out",
-      "pos": [120, 480],
-      "size": [210, 76],
+      "sublabel": "595 lines of ODS in",
+      "tag": "6,704 lines of C++ out",
+      "pos": [
+        140,
+        492
+      ],
+      "size": [
+        220,
+        80
+      ],
       "sources": [
-        { "path": "include/toy/Ops.td" },
-        { "path": "src/dialect/ToyCombine.td" }
+        {
+          "path": "include/toy/Ops.td"
+        },
+        {
+          "path": "src/dialect/ToyCombine.td"
+        }
       ]
     },
     {
       "id": "mlir",
       "type": "external",
       "label": "MLIR and LLVM 24",
-      "sublabel": "Operation, Type, Pass, the generic transformations",
-      "pos": [760, 480],
-      "size": [210, 76]
+      "sublabel": "Operation, Type, Pass",
+      "pos": [
+        860,
+        492
+      ],
+      "size": [
+        220,
+        80
+      ]
     },
     {
       "id": "gate",
       "type": "security",
       "label": "tests/compat",
-      "sublabel": "18,480 comparisons, 0 unexpected",
-      "tag": "acceptance gate",
-      "pos": [760, 60],
-      "size": [210, 76],
-      "sources": [{ "path": "tests/compat/compare-upstream.sh" }]
+      "sublabel": "18,480 comparisons",
+      "tag": "0 unexpected",
+      "pos": [
+        860,
+        40
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "tests/compat/compare-upstream.sh"
+        }
+      ]
     },
     {
       "id": "upstream",
       "type": "external",
       "label": "toyc-ch7",
-      "sublabel": "the tutorial's own compiler, kept as the golden reference",
-      "pos": [760, 220],
-      "size": [210, 76],
-      "sources": [{ "path": "reference/Ch7" }]
+      "sublabel": "the tutorial's compiler",
+      "tag": "golden reference",
+      "pos": [
+        860,
+        190
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "reference/Ch7/toyc.cpp",
+          "label": "upstream driver"
+        }
+      ]
     }
   ],
   "connections": [
@@ -148,7 +276,8 @@
       "label": "links",
       "variant": "emphasis",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 38
     },
     {
       "id": "codegen-runs-passes",
@@ -156,7 +285,8 @@
       "to": "passes",
       "label": "schedules",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 38
     },
     {
       "id": "passes-rewrite-dialect",
@@ -164,13 +294,14 @@
       "to": "dialect",
       "label": "rewrites",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 38
     },
     {
       "id": "codegen-parses",
       "from": "codegen",
       "to": "frontendlib",
-      "label": "parses source into an AST",
+      "label": "parses into an AST",
       "fromSide": "left",
       "toSide": "right"
     },
@@ -178,7 +309,7 @@
       "id": "ods-generates",
       "from": "ods",
       "to": "dialect",
-      "label": "generates the op classes",
+      "label": "generates op classes",
       "variant": "dashed",
       "fromSide": "right",
       "toSide": "left"
@@ -187,7 +318,7 @@
       "id": "mlir-supplies",
       "from": "mlir",
       "to": "dialect",
-      "label": "supplies the IR and the passes",
+      "label": "supplies IR and passes",
       "fromSide": "left",
       "toSide": "right"
     },
@@ -198,7 +329,8 @@
       "label": "runs every stage",
       "variant": "security",
       "fromSide": "left",
-      "toSide": "right"
+      "toSide": "right",
+      "labelDx": -32
     },
     {
       "id": "gate-diffs-upstream",
@@ -207,7 +339,8 @@
       "label": "diffs against",
       "variant": "security",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 35
     }
   ],
   "cards": [
@@ -215,18 +348,16 @@
       "dot": "cyan",
       "title": "The layering rule",
       "items": [
-        "Nothing links upward, so each library compiles against the ones below it and knows nothing of the ones above.",
-        "ToyFrontend has no idea MLIR exists. ldd on the unit-test binary lists no MLIR library, and nm finds no mlir:: symbol in libToyFrontend.a.",
-        "Upstream ships this as seven executables, ch1 through ch7, where a change to the lexer is a change to seven files."
+        "Nothing links upward: each library compiles against the ones below it and knows nothing of the ones above.",
+        "ToyFrontend has no idea MLIR exists: ldd on the unit-test binary lists no MLIR library."
       ]
     },
     {
       "dot": "violet",
       "title": "What the dialect is made of",
       "items": [
-        "Ops.td declares one dialect, one type and twelve operations; mlir-tblgen turns it into the accessors, builders, verifiers, parser and printer.",
-        "Canonicalization patterns live with the dialect, not the passes: getCanonicalizationPatterns is an op hook, and putting it elsewhere makes the two archives mutually dependent.",
-        "!toy.struct needs a storage class, so registerTypes() lives in the file that defines it."
+        "Ops.td declares one dialect, one type and twelve operations. mlir-tblgen turns it into accessors, builders, verifiers, parser and printer.",
+        "Canonicalization patterns live with the dialect; with the passes, the two archives became mutually dependent."
       ]
     },
     {
@@ -234,8 +365,7 @@
       "title": "Why the gate is the point",
       "items": [
         "The language is unchanged, so our output can be required to match toyc-ch7 byte for byte at every stage.",
-        "1,540 programs, six stages, with and without -opt: 18,480 comparisons, 0 unexpected, nothing skipped.",
-        "Renaming toy.mul in a mutant makes the sweep fail, which is how the gate is known not to be vacuous."
+        "18,480 comparisons, 0 unexpected, nothing skipped. A mutant that renames toy.mul fails the sweep."
       ]
     }
   ]

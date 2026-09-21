@@ -26,6 +26,18 @@ upstream source for each chapter is under `reference/Ch1` through
 | [12. Debug info and object files](12-debug-info-and-objects.md) | `DebugInfo.{h,cpp}`, `ObjectEmitter.{h,cpp}`, `Translate.{h,cpp}`, `Jit.{h,cpp}` | past Ch7 |
 | [13. Testing and equivalence](13-testing-and-equivalence.md) | `test/`, `tests/`, `tests/compat/` | none |
 
+## Two diagrams
+
+Both are standalone HTML: open the file, no server and no network. They pan and
+zoom, switch between light and dark, trace a relationship, and export to PNG or
+SVG. Each is generated from the `.json` beside it, so the picture and its source
+travel together.
+
+| Diagram | Shows |
+| --- | --- |
+| [architecture.html](architecture.html) | The four libraries and which way they link, with the toolchain and the equivalence gate around them. Its boxes link to the files they stand for. |
+| [pipeline.html](pipeline.html) | One Toy program from source to a running process, annotated with the `-emit` flag that stops at each level and the file that performs each step. |
+
 ## Where to start
 
 Reading 01 through 09 in order follows the tutorial and builds up the compiler

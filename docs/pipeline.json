@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "How toyc compiles a Toy program",
+    "output": "pipeline.html",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1072,
+      560
+    ],
+    "views": [
+      {
+        "id": "main-path",
+        "label": "The main path",
+        "focus": [
+          "source",
+          "ast",
+          "toyir",
+          "affine",
+          "llvmd",
+          "llvmir"
+        ],
+        "note": "Source to LLVM IR, one lowering at a time. Each step has an -emit flag that stops there."
+      },
+      {
+        "id": "optimization",
+        "label": "What -opt adds",
+        "focus": [
+          "toyir",
+          "optpasses",
+          "affine"
+        ],
+        "note": "Generic MLIR passes rewrite Toy IR before it is lowered, which is why the dialect implements interfaces."
+      },
+      {
+        "id": "two-exits",
+        "label": "Two ways out",
+        "focus": [
+          "llvmir",
+          "obj",
+          "jit"
+        ],
+        "note": "The same llvm::Module is either written as an object file or compiled and run in this process."
+      }
+    ]
+  },
+  "stages": [
+    {
+      "label": "Source"
+    },
+    {
+      "label": "Front end"
+    },
+    {
+      "label": "Toy IR"
+    },
+    {
+      "label": "Lowered IR"
+    },
+    {
+      "label": "Out of MLIR"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "source",
+      "type": "external",
+      "label": ".toy source",
+      "sublabel": "rank <= 2 f64 tensors",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "height": 64
+    },
+    {
+      "id": "mlirin",
+      "type": "external",
+      "label": ".mlir input",
+      "sublabel": "any stage, fed back in",
+      "tag": "-x mlir",
+      "stage": 0,
+      "row": 2,
+      "width": 150,
+      "height": 64,
+      "yOffset": 20
+    },
+    {
+      "id": "ast",
+      "type": "backend",
+      "label": "AST",
+      "sublabel": "Lexer, Parser",
+      "tag": "-emit=ast",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "height": 64
+    },
+    {
+      "id": "optpasses",
+      "type": "security",
+      "label": "inline, infer shapes, CSE",
+      "sublabel": "generic MLIR passes",
+      "tag": "-opt",
+      "stage": 2,
+      "row": 0,
+      "width": 150,
+      "height": 64,
+      "yOffset": -20
+    },
+    {
+      "id": "toyir",
+      "type": "backend",
+      "label": "Toy dialect",
+      "sublabel": "unranked tensors",
+      "tag": "-emit=mlir",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "height": 64
+    },
+    {
+      "id": "affine",
+      "type": "backend",
+      "label": "affine, arith, memref",
+      "sublabel": "loops over buffers",
+      "tag": "-emit=mlir-affine",
+      "stage": 3,
+      "row": 1,
+      "width": 150,
+      "height": 64
+    },
+    {
+      "id": "llvmd",
+      "type": "backend",
+      "label": "LLVM dialect",
+      "sublabel": "printf, memref descriptor",
+      "tag": "-emit=mlir-llvm",
+      "stage": 3,
+      "row": 2,
+      "width": 150,
+      "height": 64,
+      "yOffset": 20
+    },
+    {
+      "id": "llvmir",
+      "type": "backend",
+      "label": "llvm::Module",
+      "sublabel": "no longer MLIR",
+      "tag": "-emit=llvm",
+      "stage": 4,
+      "row": 1,
+      "width": 150,
+      "height": 64
+    },
+    {
+      "id": "obj",
+      "type": "database",
+      "label": "prog.o",
+      "sublabel": "links with clang",
+      "tag": "-c",
+      "stage": 4,
+      "row": 0,
+      "width": 150,
+      "height": 64,
+      "yOffset": -20
+    },
+    {
+      "id": "jit",
+      "type": "backend",
+      "label": "run in process",
+      "sublabel": "ExecutionEngine",
+      "tag": "-emit=jit",
+      "stage": 4,
+      "row": 2,
+      "width": 150,
+      "height": 64,
+      "yOffset": 20
+    }
+  ],
+  "flows": [
+    {
+      "id": "lex-and-parse",
+      "from": "source",
+      "to": "ast",
+      "label": "lex and parse",
+      "classification": "Lexer, Parser",
+      "variant": "emphasis",
+      "labelDy": -44
+    },
+    {
+      "id": "mlirgen",
+      "from": "ast",
+      "to": "toyir",
+      "label": "build ops",
+      "classification": "MLIRGen.cpp",
+      "variant": "emphasis",
+      "labelDy": -44
+    },
+    {
+      "id": "reenter",
+      "from": "mlirin",
+      "to": "toyir",
+      "label": "parse as IR",
+      "classification": "any stage round-trips",
+      "variant": "dashed",
+      "route": "bottom-channel",
+      "labelDy": 44
+    },
+    {
+      "id": "rewrite-toy",
+      "from": "toyir",
+      "to": "optpasses",
+      "label": "rewrite",
+      "classification": "via interfaces",
+      "variant": "security",
+      "labelAt": [
+        530,
+        214
+      ]
+    },
+    {
+      "id": "to-affine",
+      "from": "toyir",
+      "to": "affine",
+      "label": "tensors to buffers",
+      "classification": "LowerToAffine.cpp",
+      "variant": "emphasis",
+      "labelDy": -44
+    },
+    {
+      "id": "to-llvm",
+      "from": "affine",
+      "to": "llvmd",
+      "label": "to LLVM dialect",
+      "classification": "LowerToLLVM.cpp",
+      "variant": "emphasis",
+      "labelAt": [
+        745,
+        330
+      ]
+    },
+    {
+      "id": "translate",
+      "from": "llvmd",
+      "to": "llvmir",
+      "label": "translate out",
+      "classification": "src/Translate.cpp",
+      "variant": "emphasis",
+      "labelAt": [
+        745,
+        462
+      ]
+    },
+    {
+      "id": "emit-object",
+      "from": "llvmir",
+      "to": "obj",
+      "label": "TargetMachine",
+      "classification": "src/ObjectEmitter.cpp",
+      "variant": "default",
+      "labelAt": [
+        960,
+        218
+      ]
+    },
+    {
+      "id": "run-jit",
+      "from": "llvmir",
+      "to": "jit",
+      "label": "call main",
+      "classification": "src/Jit.cpp",
+      "variant": "default",
+      "labelAt": [
+        960,
+        330
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "One flag chooses the depth",
+      "items": [
+        "Every box on the main path is an -emit value, so the compiler can be stopped and inspected at any level.",
+        "-x mlir re-enters at the Toy dialect, so one stage's output can be fed back in as the next one's input."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Why the order matters",
+      "items": [
+        "Shape inference only works after inlining, because Toy functions stay shape-polymorphic until a call is replaced by its body.",
+        "transpose(transpose(x)) folds while the op still means transpose. After lowering it is a loop nest, and the knowledge is gone."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Both exits agree",
+      "items": [
+        "The object path and the JIT translate the same LLVM dialect module; only what happens to the result differs.",
+        "A linked prog.o prints exactly what -emit=jit prints, which is the end-to-end check that the lowering is real."
+      ]
+    }
+  ]
+}

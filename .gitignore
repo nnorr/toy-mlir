@@ -5,3 +5,6 @@ build-*/
 *.s
 .cache/
 compile_commands.json
+
+# archify verification evidence (screenshots and receipts), not deliverables
+*.visual-check.*
