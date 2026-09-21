@@ -1,0 +1,6 @@
+# docs/03-parser.md: `-` has a precedence but no code generation, so this parses and fails in MLIRGen.
+def main() {
+  var a = 1;
+  var b = a - a;
+  print(b);
+}

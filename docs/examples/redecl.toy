@@ -1,0 +1,6 @@
+# docs/04-mlirgen.md, deviation D4: a redeclaration. Upstream drops the function and prints nothing.
+def main() {
+  var a = 1;
+  var a = 2;
+  print(a);
+}

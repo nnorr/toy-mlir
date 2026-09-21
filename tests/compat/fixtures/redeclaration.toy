@@ -1,0 +1,8 @@
+# Deviation D4. Upstream's MLIRGen fails without emitting a diagnostic, so
+# -emit=mlir exits 1 having printed nothing whatsoever. Here the second
+# declaration is reported with its location.
+def main() {
+  var a = 1;
+  var a = 2;
+  print(a);
+}

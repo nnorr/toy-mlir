@@ -1,0 +1,5 @@
+1c1,2
+< loc("INPUT":5:3): error: missing initializer in variable declaration
+---
+> Parse error (5, 11): expected 'expression' as the initializer of a variable declaration but has Token 59 ';'
+> Parse error (5, 11): expected 'nothing' at end of module but has Token 59 ';'

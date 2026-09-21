@@ -1,0 +1,4 @@
+# docs/04-mlirgen.md: shows upstream's doubled prefix, "error: error: unknown variable 'nope'".
+def main() {
+  print(nope);
+}

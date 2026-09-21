@@ -1,0 +1,35 @@
+# Our own -emit=mlir output, fed back in as MLIR input.
+#
+# This is the round-trip property every dialect should have: the printer and the
+# parser agree, so the textual form is a real serialization rather than a debug
+# dump. It exercises the custom parsers in dialect/Ops.cpp (toy.constant, the
+# binary ops, toy.func) and the type parser in dialect/StructType.cpp.
+#
+# RUN: %toyc %s -emit=mlir > %t.mlir 2>&1
+# RUN: %toyc %t.mlir -x mlir -emit=mlir 2>&1 | %filecheck %s
+
+struct Struct {
+  var a;
+  var b;
+}
+
+def multiply_transpose(a, b) {
+  return transpose(a) * transpose(b);
+}
+
+def main() {
+  Struct value = {[[1, 2], [3, 4]], [[5, 6], [7, 8]]};
+  var c = multiply_transpose(value.a, value.b);
+  print(c);
+}
+
+# CHECK: module {
+# CHECK: toy.func private @multiply_transpose(
+# CHECK: toy.transpose(
+# CHECK: toy.mul
+# CHECK: toy.func @main()
+# CHECK: toy.struct_constant
+# CHECK-SAME: !toy.struct<tensor<*xf64>, tensor<*xf64>>
+# CHECK: toy.struct_access
+# CHECK: toy.generic_call @multiply_transpose(
+# CHECK: toy.print

@@ -1,0 +1,10 @@
+1,7c1
+< module {
+<   toy.func @main() {
+<     %0 = toy.constant dense<1.230000e+00> : tensor<f64>
+<     toy.print %0 : tensor<f64>
+<     toy.return
+<   }
+< }
+---
+> INPUT:5:11: error: malformed number '1.23.45'

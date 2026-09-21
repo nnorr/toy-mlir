@@ -1,0 +1,38 @@
+# The AST dump in Toy style, which must match `toyc-ch7 -emit=ast` exactly.
+# No binary operator appears here on purpose: deviation D2 moves binop columns,
+# and binop-location.toy covers that on its own.
+#
+# RUN: %toyc %s -emit=ast 2>&1 | %filecheck %s
+
+def double_it(a) {
+  return a;
+}
+
+def main() {
+  var a<2, 3> = [[1, 2, 3], [4, 5, 6]];
+  var b = double_it(a);
+  print(b);
+}
+
+# CHECK:   Module:
+# CHECK-NEXT:     Function
+# CHECK-NEXT:       Proto 'double_it' @{{.*}}ast-dump.toy:7:1
+# CHECK-NEXT:       Params: [a]
+# CHECK-NEXT:       Block {
+# CHECK-NEXT:         Return
+# CHECK-NEXT:           var: a @{{.*}}ast-dump.toy:8:10
+# CHECK-NEXT:       } // Block
+# CHECK-NEXT:     Function
+# CHECK-NEXT:       Proto 'main' @{{.*}}ast-dump.toy:11:1
+# CHECK-NEXT:       Params: []
+# CHECK-NEXT:       Block {
+# CHECK-NEXT:         VarDecl a<2, 3> @{{.*}}ast-dump.toy:12:3
+# CHECK-NEXT:           Literal: <2, 3>[ <3>[ 1.000000e+00, 2.000000e+00, 3.000000e+00], <3>[ 4.000000e+00, 5.000000e+00, 6.000000e+00]] @{{.*}}ast-dump.toy:12:17
+# CHECK-NEXT:         VarDecl b<> @{{.*}}ast-dump.toy:13:3
+# CHECK-NEXT:           Call 'double_it' [ @{{.*}}ast-dump.toy:13:11
+# CHECK-NEXT:             var: a @{{.*}}ast-dump.toy:13:21
+# CHECK-NEXT:           ]
+# CHECK-NEXT:         Print [ @{{.*}}ast-dump.toy:14:3
+# CHECK-NEXT:           var: b @{{.*}}ast-dump.toy:14:9
+# CHECK-NEXT:         ]
+# CHECK-NEXT:       } // Block

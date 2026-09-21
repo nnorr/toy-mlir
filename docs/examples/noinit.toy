@@ -1,0 +1,5 @@
+# docs/03-parser.md, deviation D7: a declaration with no `=`. Aborts upstream (exit 134).
+def main() {
+  var a;
+  print(a);
+}

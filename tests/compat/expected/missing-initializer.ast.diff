@@ -1,0 +1,14 @@
+1,10c1,2
+<   Module:
+<     Function 
+<       Proto 'main' @INPUT:4:1
+<       Params: []
+<       Block {
+<         VarDecl a<> @INPUT:5:3
+<         Print [ @INPUT:6:3
+<           var: a @INPUT:6:9
+<         ]
+<       } // Block
+---
+> Parse error (5, 11): expected 'expression' as the initializer of a variable declaration but has Token 59 ';'
+> Parse error (5, 11): expected 'nothing' at end of module but has Token 59 ';'

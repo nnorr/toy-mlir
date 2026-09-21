@@ -1,0 +1,31 @@
+# Deviation D2: a binary expression's location is the operator's.
+#
+# On the `return a + b;` line below the '+' is at column 12 and the right-hand
+# side starts at column 14. Upstream reads the location after consuming the
+# operator token, so `toyc-ch7 -emit=ast` reports 14 for the BinOp; this repo
+# reports 12. The skew is not cosmetic -- it reaches the MLIR loc() attached to
+# toy.add/toy.mul and from there the DWARF line table.
+#
+# RUN: %toyc %s -emit=ast 2>&1 | %filecheck %s
+#
+# The same file through the upstream binary, asserting the old column, so this
+# test documents both sides of the difference and fails if either moves.
+# RUN: %toyc-upstream %s -emit=ast 2>&1 | %filecheck %s --check-prefix=UPSTREAM
+# REQUIRES: upstream-toyc
+
+def f(a, b) {
+  return a + b;
+}
+
+def main() {
+  var x<1, 2> = [1, 2];
+  print(f(x, x));
+}
+
+# CHECK:       BinOp: + @{{.*}}binop-location.toy:17:12
+# CHECK-NEXT:    var: a @{{.*}}binop-location.toy:17:10
+# CHECK-NEXT:    var: b @{{.*}}binop-location.toy:17:14
+
+# UPSTREAM:      BinOp: + @{{.*}}binop-location.toy:17:14
+# UPSTREAM-NEXT:   var: a @{{.*}}binop-location.toy:17:10
+# UPSTREAM-NEXT:   var: b @{{.*}}binop-location.toy:17:14

@@ -1,0 +1,7 @@
+# docs/03-parser.md: the typed form of D7. Upstream already emits the message D7 adopts for `var a;`.
+struct S {
+  var a;
+}
+def main() {
+  S s;
+}

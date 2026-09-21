@@ -1,0 +1,15 @@
+# Generated from lit.site.cfg.py.in by CMake -- do not edit.
+#
+# Two-step generation: configure_file() expands @VARS@ but not generator
+# expressions, and file(GENERATE) does the reverse. $<TARGET_FILE:toyc> needs
+# the second, so CMake writes this file through both.
+
+config.toy_mlir_obj_root = "@CMAKE_CURRENT_BINARY_DIR@"
+config.toyc_binary = "@TOYC_BINARY@"
+config.toyc_upstream_binary = "@TOYC_UPSTREAM_BINARY@"
+config.filecheck_binary = "@FILECHECK_BINARY@"
+config.clang_binary = "@CLANG_BINARY@"
+config.readelf_binary = "@READELF_BINARY@"
+config.dwarfdump_binary = "@DWARFDUMP_BINARY@"
+
+lit_config.load_config(config, "@TOY_MLIR_TEST_SOURCE_DIR@/lit.cfg.py")

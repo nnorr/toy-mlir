@@ -1,0 +1,40 @@
+# The same AST in the format 06_llvm_tutorial's ASTDumper uses, so a Toy AST and
+# a Kaleidoscope AST can be read side by side.
+#
+# This format has no upstream counterpart to diff against -- it exists only in
+# this repo -- so the expectations here describe the shape of that format:
+# `Function`, a `Prototype name (args) @line` line, and captioned children
+# rather than Toy's braced blocks.
+#
+# RUN: %toyc %s -emit=ast --dump-ast-style=kaleidoscope 2>&1 | %filecheck %s
+#
+# The default style is unchanged by the flag's existence.
+# RUN: %toyc %s -emit=ast 2>&1 | %filecheck %s --check-prefix=TOYSTYLE
+
+def f(a, b) {
+  return a + b;
+}
+
+def main() {
+  var x<1, 2> = [1, 2];
+  print(f(x, x));
+}
+
+# CHECK: Function
+# CHECK: Prototype f (a b) @{{[0-9]+}}
+# CHECK: Body:
+# CHECK: Return
+# CHECK: Binary '+' @{{[0-9]+}}:{{[0-9]+}}
+# CHECK: LHS:
+# CHECK: Variable a @{{[0-9]+}}:{{[0-9]+}}
+# CHECK: RHS:
+# CHECK: Variable b @{{[0-9]+}}:{{[0-9]+}}
+# CHECK: Prototype main () @{{[0-9]+}}
+# CHECK: Print
+# CHECK: Call f @{{[0-9]+}}:{{[0-9]+}}
+
+# TOYSTYLE: Module:
+# TOYSTYLE: Proto 'f' @{{.*}}ast-dump-kaleidoscope.toy:14:1
+# TOYSTYLE: Params: [a, b]
+# TOYSTYLE: Block {
+# TOYSTYLE: BinOp: + @{{.*}}ast-dump-kaleidoscope.toy:15:12

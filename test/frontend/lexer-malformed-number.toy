@@ -1,0 +1,15 @@
+# Deviation D1: a number with two decimal points is reported.
+#
+# Upstream lexes `1.23.45` as a single token, hands the text to strtod, keeps
+# the 1.23 that parsed and discards the rest without a word -- `toyc-ch7
+# -emit=ast` prints 1.230000e+00 and exits 0. Here the lexer records the error
+# and the driver refuses to go on.
+#
+# RUN: not %toyc %s -emit=ast 2>&1 | %filecheck %s
+
+def main() {
+  var a = 1.23.45;
+  print(a);
+}
+
+# CHECK: {{.*}}lexer-malformed-number.toy:11:11: error: malformed number

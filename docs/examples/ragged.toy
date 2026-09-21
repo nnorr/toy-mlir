@@ -1,0 +1,4 @@
+# docs/03-parser.md: a literal whose rows disagree, so no shape can be recovered.
+def main() {
+  var a = [[1,2],[3]];
+}

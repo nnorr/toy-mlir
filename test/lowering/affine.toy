@@ -1,0 +1,39 @@
+# Partial lowering: the computation becomes affine loops over memrefs, while
+# toy.print survives untouched because the conversion target marks it
+# dynamically legal once its operand is no longer a tensor.
+#
+# Note what changed in the type system here -- tensor (a value) became memref (a
+# buffer), with explicit alloc and dealloc.
+#
+# RUN: %toyc %s -emit=mlir-affine 2>&1 | %filecheck %s
+
+def main() {
+  var a<2, 2> = [[1, 2], [3, 4]];
+  var b = transpose(a);
+  print(b);
+}
+
+# CHECK: module {
+# CHECK-NEXT:   func.func @main() {
+# CHECK-NEXT:     %cst = arith.constant 4.000000e+00 : f64
+# CHECK-NEXT:     %cst_0 = arith.constant 3.000000e+00 : f64
+# CHECK-NEXT:     %cst_1 = arith.constant 2.000000e+00 : f64
+# CHECK-NEXT:     %cst_2 = arith.constant 1.000000e+00 : f64
+# CHECK-NEXT:     %alloc = memref.alloc() : memref<2x2xf64>
+# CHECK-NEXT:     %alloc_3 = memref.alloc() : memref<2x2xf64>
+# CHECK-NEXT:     affine.store %cst_2, %alloc_3[0, 0] : memref<2x2xf64>
+# CHECK-NEXT:     affine.store %cst_1, %alloc_3[0, 1] : memref<2x2xf64>
+# CHECK-NEXT:     affine.store %cst_0, %alloc_3[1, 0] : memref<2x2xf64>
+# CHECK-NEXT:     affine.store %cst, %alloc_3[1, 1] : memref<2x2xf64>
+# CHECK-NEXT:     affine.for %arg0 = 0 to 2 {
+# CHECK-NEXT:       affine.for %arg1 = 0 to 2 {
+# CHECK-NEXT:         %0 = affine.load %alloc_3[%arg1, %arg0] : memref<2x2xf64>
+# CHECK-NEXT:         affine.store %0, %alloc[%arg0, %arg1] : memref<2x2xf64>
+# CHECK-NEXT:       }
+# CHECK-NEXT:     }
+# CHECK-NEXT:     toy.print %alloc : memref<2x2xf64>
+# CHECK-NEXT:     memref.dealloc %alloc_3 : memref<2x2xf64>
+# CHECK-NEXT:     memref.dealloc %alloc : memref<2x2xf64>
+# CHECK-NEXT:     return
+# CHECK-NEXT:   }
+# CHECK-NEXT: }

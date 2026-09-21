@@ -1,0 +1,7 @@
+# Deviation D3. Upstream's parser accepts this, stores a null initializer, and
+# -emit=ast prints `VarDecl a<>` with no child and exits 0; the error appears
+# two stages later in MLIRGen. Here the parser reports it immediately.
+def main() {
+  var a = ;
+  print(a);
+}

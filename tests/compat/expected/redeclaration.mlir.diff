@@ -1,0 +1,2 @@
+0a1
+> loc("INPUT":6:3): error: variable 'a' is already declared in this scope

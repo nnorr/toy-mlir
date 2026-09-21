@@ -1,0 +1,18 @@
+# Deviation D4: redeclaring a variable is reported.
+#
+# Upstream's MLIRGen returns failure from declare() without emitting anything,
+# so `toyc-ch7 -emit=mlir` exits 1 having printed nothing at all -- the user is
+# told only that the compile failed, not why or where.
+#
+# RUN: not %toyc %s -emit=mlir 2>&1 | %filecheck %s
+
+def main() {
+  var a = 1;
+  var a = 2;
+  print(a);
+}
+
+# The location must point at the second declaration, not the first. MLIR prints
+# an unknown-source location as loc("file":line:col), which is what a diagnostic
+# carrying a FileLineColLoc looks like before any source manager is attached.
+# CHECK: loc("{{.*}}redeclaration.toy":11:3){{.*}}variable 'a' is already declared

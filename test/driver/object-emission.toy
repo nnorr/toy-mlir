@@ -1,0 +1,22 @@
+# -c writes a real relocatable object file, which upstream Toy cannot do at all
+# (it stops at the JIT). Ported from 06_llvm_tutorial's ObjectEmitter.
+#
+# RUN: %toyc %s -c -o %t.o
+# RUN: nm %t.o | %filecheck %s
+#
+# --emit-llvm writes the IR beside the object, for looking at what was compiled:
+# the object's name with .ll in place of its extension.
+# RUN: %toyc %s -c --emit-llvm -o %t2.o
+# RUN: %filecheck %s --check-prefix=IR --input-file=%t2.ll
+
+def main() {
+  var a<2, 2> = [[1, 2], [3, 4]];
+  print(transpose(a));
+}
+
+# A defined `main` and an undefined `printf` -- the object is linkable and needs
+# libc, exactly like a C object file.
+# CHECK-DAG: T main
+# CHECK-DAG: U printf
+
+# IR: define void @main()

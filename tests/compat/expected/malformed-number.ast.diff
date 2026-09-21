@@ -1,0 +1,14 @@
+1,11c1
+<   Module:
+<     Function 
+<       Proto 'main' @INPUT:4:1
+<       Params: []
+<       Block {
+<         VarDecl a<> @INPUT:5:3
+<           1.230000e+00 @INPUT:5:11
+<         Print [ @INPUT:6:3
+<           var: a @INPUT:6:9
+<         ]
+<       } // Block
+---
+> INPUT:5:11: error: malformed number '1.23.45'

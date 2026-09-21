@@ -1,0 +1,32 @@
+# With -opt the affine passes fuse the transpose loop nest into the multiply
+# loop nest and drop the buffer between them: four affine.for become two, and
+# three memref.alloc become two.
+#
+# This is the tutorial's central claim made concrete -- the fusion is legal
+# because the affine dialect still records the access pattern. Lower one more
+# level to scf and the same optimization is no longer available.
+#
+# RUN: %toyc %s -emit=mlir-affine 2>&1 | grep -c affine.for | %filecheck %s --check-prefix=LOOPS-O0
+# RUN: %toyc %s -emit=mlir-affine -opt 2>&1 | grep -c affine.for | %filecheck %s --check-prefix=LOOPS-OPT
+# RUN: %toyc %s -emit=mlir-affine 2>&1 | grep -c memref.alloc | %filecheck %s --check-prefix=ALLOC-O0
+# RUN: %toyc %s -emit=mlir-affine -opt 2>&1 | grep -c memref.alloc | %filecheck %s --check-prefix=ALLOC-OPT
+# RUN: %toyc %s -emit=mlir-affine -opt 2>&1 | %filecheck %s
+
+def main() {
+  var a<2, 2> = [[1, 2], [3, 4]];
+  var b = transpose(a);
+  var c = b * b;
+  print(c);
+}
+
+# LOOPS-O0: 4
+# LOOPS-OPT: 2
+# ALLOC-O0: 3
+# ALLOC-OPT: 2
+
+# The fused nest carries the multiply inside the transpose's loops.
+# CHECK: affine.for
+# CHECK-NEXT: affine.for
+# CHECK-NEXT: affine.load
+# CHECK-NEXT: arith.mulf
+# CHECK-NEXT: affine.store

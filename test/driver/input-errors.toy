@@ -1,0 +1,24 @@
+# The driver's own error paths, which are easy to break and never exercised by
+# the IR tests.
+#
+# A missing input file is reported rather than crashed on, and upstream's exit
+# codes are preserved so scripts written against the tutorial keep working.
+#
+# RUN: not %toyc %t.does-not-exist.toy -emit=ast 2>&1 | %filecheck %s --check-prefix=MISSING
+#
+# Reading this file as MLIR fails in the MLIR parser, not the Toy one.
+# RUN: not %toyc %s -x mlir -emit=mlir 2>&1 | %filecheck %s --check-prefix=NOTMLIR
+#
+# A well-formed program still compiles when a stage is named explicitly, which
+# keeps this test honest about only the error paths failing.
+# RUN: %toyc %s -emit=mlir 2>&1 | %filecheck %s --check-prefix=OK
+
+def main() {
+  print(1);
+}
+
+# MISSING: Could not open input file
+
+# NOTMLIR: error:
+
+# OK: toy.func @main()

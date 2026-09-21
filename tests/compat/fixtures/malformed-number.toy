@@ -1,0 +1,7 @@
+# Deviation D1. Upstream lexes `1.23.45` as one token, strtod stops at the
+# second '.', and the 1.23 that parsed is used without comment. Here the lexer
+# reports it and the driver stops.
+def main() {
+  var a = 1.23.45;
+  print(a);
+}

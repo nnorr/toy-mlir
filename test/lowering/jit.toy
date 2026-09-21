@@ -1,0 +1,15 @@
+# The whole pipeline, executed. transpose([[1,2],[3,4]]) is [[1,3],[2,4]], then
+# squared element-wise.
+#
+# RUN: %toyc %s -emit=jit 2>&1 | %filecheck %s
+# RUN: %toyc %s -emit=jit -opt 2>&1 | %filecheck %s
+
+def main() {
+  var a<2, 2> = [[1, 2], [3, 4]];
+  var b = transpose(a);
+  var c = b * b;
+  print(c);
+}
+
+# CHECK: 1.000000 9.000000
+# CHECK: 4.000000 16.000000

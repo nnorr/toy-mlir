@@ -1,0 +1,5 @@
+# docs/01-lexer.md, deviation D1: `1.23.45` is malformed. We report it, upstream reads 1.23.
+def main() {
+  var a = 1.23.45;
+  print(a);
+}

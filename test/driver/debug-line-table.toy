@@ -1,0 +1,41 @@
+# -g and the DWARF that comes out of an MLIR pipeline.
+#
+# Nothing in the front end builds debug metadata. The locations MLIRGen attached
+# to each operation survive inlining, shape inference and both lowerings on
+# their own, and all that is missing at the end is the scope structure DWARF
+# needs -- a compile unit and a subprogram for those locations to hang from.
+# Contrast 06_llvm_tutorial, where a DIBuilder is driven by hand during code
+# generation.
+#
+# What -g changes is *whose* compile unit it is. Without it the pipeline runs
+# upstream's DIScopeForLLVMFuncOpPass, which invents a compile unit whose
+# producer is "MLIR" -- keeping this repo byte-identical to toyc-ch7 when -g is
+# absent. With it, src/DebugInfo.cpp attaches a compile unit that names this
+# compiler instead. The line table itself is present either way, which is why
+# the interesting assertion here is the producer rather than the section.
+#
+# The limit of all this is worth knowing: line tables only. No DILocalVariable
+# is ever created, so a debugger can step by line but cannot print a variable.
+#
+# REQUIRES: readelf
+# RUN: %toyc %s -c -g -o %t.o
+# RUN: %readelf --debug-dump=decodedline %t.o | %filecheck %s
+#
+# RUN: %toyc %s -emit=llvm -g 2>&1 | %filecheck %s --check-prefix=PRODUCER
+# RUN: %toyc %s -emit=llvm 2>&1 | %filecheck %s --check-prefix=NOPRODUCER
+
+def main() {
+  var a<2, 2> = [[1, 2], [3, 4]];
+  print(transpose(a));
+}
+
+# The table maps addresses back to lines of this file, not to generated IR.
+# CHECK: Contents of the .debug_line section
+# CHECK: CU: {{.*}}debug-line-table.toy
+# CHECK: File name
+# CHECK: debug-line-table.toy
+
+# PRODUCER: producer: "toyc (toy-mlir)"
+
+# Without -g the metadata is upstream's, byte for byte.
+# NOPRODUCER: producer: "MLIR"

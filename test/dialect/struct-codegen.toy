@@ -1,0 +1,23 @@
+# A struct becomes toy.struct_constant plus toy.struct_access over a
+# !toy.struct<...> type, none of which exists before Ch7 of the tutorial.
+#
+# RUN: %toyc %s -emit=mlir 2>&1 | %filecheck %s
+
+struct Struct {
+  var a;
+  var b;
+}
+
+def main() {
+  Struct value = {[[1, 2], [3, 4]], [[5, 6], [7, 8]]};
+  print(value.a);
+}
+
+# CHECK: module {
+# CHECK-NEXT:   toy.func @main() {
+# CHECK-NEXT:     %0 = toy.struct_constant [dense<{{\[\[}}1.000000e+00, 2.000000e+00], [3.000000e+00, 4.000000e+00]]> : tensor<2x2xf64>, dense<{{\[\[}}5.000000e+00, 6.000000e+00], [7.000000e+00, 8.000000e+00]]> : tensor<2x2xf64>] : !toy.struct<tensor<*xf64>, tensor<*xf64>>
+# CHECK-NEXT:     %1 = toy.struct_access %0[0] : !toy.struct<tensor<*xf64>, tensor<*xf64>> -> tensor<*xf64>
+# CHECK-NEXT:     toy.print %1 : tensor<*xf64>
+# CHECK-NEXT:     toy.return
+# CHECK-NEXT:   }
+# CHECK-NEXT: }

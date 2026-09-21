@@ -1,0 +1,5 @@
+# docs/03-parser.md, deviation D3: initializer fails to parse. Upstream exits 0 with a hole in the AST.
+def main() {
+  var a = ;
+  print(a);
+}

@@ -1,0 +1,16 @@
+# Deviation D3: a `var` whose initializer does not parse is an error here.
+#
+# Upstream swallows it: the parse "succeeds", the VarDeclExprAST holds a null
+# initializer, and `toyc-ch7 -emit=ast` prints `VarDecl a<>` with no child and
+# exits 0. The problem only surfaces two stages later in MLIRGen ("missing
+# initializer in variable declaration"), and toyc-ch1's dumper does not survive
+# it at all -- it dyn_casts the null pointer and aborts (exit 134).
+#
+# RUN: not %toyc %s -emit=ast 2>&1 | %filecheck %s
+
+def main() {
+  var a = ;
+  print(a);
+}
+
+# CHECK: Parse error ({{.*}}): expected
