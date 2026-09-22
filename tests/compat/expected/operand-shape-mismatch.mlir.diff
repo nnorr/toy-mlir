@@ -1,0 +1,13 @@
+1,9c1,2
+< module {
+<   toy.func @main() {
+<     %0 = toy.constant dense<[1.000000e+00, 2.000000e+00, 3.000000e+00]> : tensor<3xf64>
+<     %1 = toy.constant dense<[1.000000e+00, 2.000000e+00]> : tensor<2xf64>
+<     %2 = toy.add %0, %1 : (tensor<3xf64>, tensor<2xf64>) -> tensor<*xf64>
+<     toy.print %2 : tensor<*xf64>
+<     toy.return
+<   }
+< }
+---
+> loc("INPUT":8:11): error: 'toy.add' op operand shapes must match, got 'tensor<3xf64>' and 'tensor<2xf64>'
+> error: module verification error

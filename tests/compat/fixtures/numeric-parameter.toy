@@ -1,0 +1,6 @@
+# Deviation D7. Upstream calls getId() on the `1` without testing it, and the
+# assertion aborts the compiler (exit 134). Here it is a parse error.
+
+def f(1) {
+  return;
+}

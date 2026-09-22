@@ -1,6 +1,6 @@
 # 06. Patterns and folding
 
-Files: `src/dialect/ToyCombine.td` (68), `src/dialect/ToyCombine.cpp` (89), `src/dialect/Folders.cpp` (64), and the generated `build/src/ToyCombine.inc` (174)
+Files: `src/dialect/ToyCombine.td` (72), `src/dialect/ToyCombine.cpp` (89), `src/dialect/Folders.cpp` (64), and the generated `build/src/ToyCombine.inc` (174)
 
 ## What these do
 
@@ -124,17 +124,19 @@ def ReshapeReshapeOptPattern : Pat<(ReshapeOp(ReshapeOp $arg)),
                                    (ReshapeOp $arg)>;
 ```
 
-`NativeCodeCall` escapes into C++ when the result has to be computed rather than matched (`src/dialect/ToyCombine.td:52`):
+`NativeCodeCall` escapes into C++ when the result has to be computed rather than matched (`src/dialect/ToyCombine.td:53`). A one-element constant is broadcast with `resizeSplat`, since `reshape` asserts that the element count is unchanged (deviation D11):
 
 ```tablegen
 def ReshapeConstant :
-  NativeCodeCall<"$0.reshape(::llvm::cast<ShapedType>($1.getType()))">;
+  NativeCodeCall<"$0.isSplat()"
+                 " ? $0.resizeSplat(::llvm::cast<ShapedType>($1.getType()))"
+                 " : $0.reshape(::llvm::cast<ShapedType>($1.getType()))">;
 def FoldConstantReshapeOptPattern : Pat<
   (ReshapeOp:$res (ConstantOp $arg)),
   (ConstantOp (ReshapeConstant $arg, $res))>;
 ```
 
-`Constraint` adds a predicate checked after the structural match (`src/dialect/ToyCombine.td:64`):
+`Constraint` adds a predicate checked after the structural match (`src/dialect/ToyCombine.td:68`):
 
 ```tablegen
 def TypesAreIdentical : Constraint<CPred<"$0.getType() == $1.getType()">>;

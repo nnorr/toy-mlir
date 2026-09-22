@@ -1,0 +1,9 @@
+# Deviation D9. Upstream reads bytes as signed char, so the 0xFF below equals
+# EOF: the rest of the file is dropped and the compile exits 0. Here it is an
+# ordinary unexpected character.
+
+def main() {
+  print([1, 2]);
+}
+ÿ
+def dropped() { return; }

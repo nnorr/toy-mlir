@@ -1,0 +1,7 @@
+# Deviation D12. Upstream reports the bad access and still exits 0. Here the
+# failed print fails the compile.
+
+def main() {
+  var a = [1, 2];
+  print(a.b);
+}

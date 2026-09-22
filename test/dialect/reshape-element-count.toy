@@ -1,0 +1,14 @@
+# Deviation D10: a reshape that changes the element count fails verification.
+#
+# Upstream has no verifier: -emit=mlir prints the reshape, and -opt aborts in
+# DenseElementsAttr::reshape.
+#
+# RUN: not %toyc %s -emit=mlir 2>&1 | %filecheck %s
+# RUN: not %toyc %s -emit=mlir -opt 2>&1 | %filecheck %s
+
+def main() {
+  var a<2, 2> = [1, 2, 3];
+  print(a);
+}
+
+# CHECK: 'toy.reshape' op cannot reshape 3 elements into 'tensor<2x2xf64>'

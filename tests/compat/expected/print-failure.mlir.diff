@@ -1,0 +1,10 @@
+1,7c1
+< loc("INPUT":6:11): error: invalid access into struct expression
+< module {
+<   toy.func @main() {
+<     %0 = toy.constant dense<[1.000000e+00, 2.000000e+00]> : tensor<2xf64>
+<     toy.return
+<   }
+< }
+---
+> loc("INPUT":6:10): error: invalid access into struct expression

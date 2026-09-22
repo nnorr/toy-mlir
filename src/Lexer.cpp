@@ -63,7 +63,9 @@ int Lexer::getNextChar() {
   // before the character is handed out and reset by the newline that ends the
   // line, which makes the first character of the next line column 1.
   ++curCol;
-  int nextChar = buffer.front();
+  // Through unsigned char: a plain char sign-extends bytes >= 0x80, and 0xFF
+  // would then compare equal to EOF and end the file early.
+  int nextChar = static_cast<unsigned char>(buffer.front());
   buffer = buffer.drop_front();
   if (nextChar == '\n') {
     ++curLineNum;

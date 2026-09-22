@@ -1,6 +1,6 @@
 # 05. The Toy dialect
 
-Files: `include/toy/Ops.td` (489), `include/toy/Dialect.h` (94), `src/dialect/ToyDialect.cpp` (79), `src/dialect/Ops.cpp` (455), `src/dialect/StructType.cpp` (183), `src/dialect/Interfaces.cpp` (131), and the generated `build/include/toy/*.inc` (about 6,500 lines)
+Files: `include/toy/Ops.td` (498), `include/toy/Dialect.h` (94), `src/dialect/ToyDialect.cpp` (79), `src/dialect/Ops.cpp` (501), `src/dialect/StructType.cpp` (183), `src/dialect/Interfaces.cpp` (131), and the generated `build/include/toy/*.inc` (about 6,500 lines)
 
 This is the document to read first if you want to understand MLIR rather than Toy.
 
@@ -106,7 +106,7 @@ A trait is a compile-time mixin that adds behavior and invariants. Toy uses thes
 
 `Pure` says the operation reads and writes nothing and can be deleted when its results are unused. Without it MLIR must assume a side effect and keeps dead operations. Canonicalization visibly depends on it; [06-patterns-and-folding.md](06-patterns-and-folding.md) shows the before and after.
 
-`Terminator` marks the operation that ends a block, and `HasParent<"FuncOp">` restricts where it may appear. `toy.return` has both (`include/toy/Ops.td:392`), so a return outside a function is rejected structurally rather than by a verifier.
+`Terminator` marks the operation that ends a block, and `HasParent<"FuncOp">` restricts where it may appear. `toy.return` has both (`include/toy/Ops.td:401`), so a return outside a function is rejected structurally rather than by a verifier.
 
 `IsolatedFromAbove` on `FuncOp` says the region does not reference values defined outside it. That lets the pass manager work on each function in parallel, and makes a function a legal anchor for a nested pass pipeline.
 
@@ -164,7 +164,7 @@ The declarations ODS writes for you are also the reason the hand-written files a
 
 Most Toy operations declare an `assemblyFormat` and get their syntax for free. Three cannot.
 
-`ConstantOp` prints its result type through its attribute rather than separately, so the type is not an independent piece of syntax (`src/dialect/Ops.cpp:128`):
+`ConstantOp` prints its result type through its attribute rather than separately, so the type is not an independent piece of syntax (`src/dialect/Ops.cpp:141`):
 
 ```c++
 mlir::ParseResult ConstantOp::parse(mlir::OpAsmParser &parser,
@@ -179,7 +179,7 @@ mlir::ParseResult ConstantOp::parse(mlir::OpAsmParser &parser,
 }
 ```
 
-The printer elides `value` from the dictionary because it prints it positionally; printing it twice would not parse back (`src/dialect/Ops.cpp:139`).
+The printer elides `value` from the dictionary because it prints it positionally; printing it twice would not parse back (`src/dialect/Ops.cpp:152`).
 
 `AddOp` and `MulOp` share one parser and printer, because they print one type when operands and result agree and a functional type when they do not (`src/dialect/Ops.cpp:95`):
 
@@ -225,7 +225,7 @@ loc("reference/tests/Ch2/invalid.mlir":8:8): error: 'toy.print' op requires zero
 
 Nobody wrote that check. `toy.print` declares no results, so the generated `verifyInvariants()` enforces it.
 
-A hand-written `verify()` is for constraints ODS cannot state. `ReturnOp::verify` relates two operations, and only one of them is `this` (`src/dialect/Ops.cpp:351`):
+A hand-written `verify()` is for constraints ODS cannot state. `ReturnOp::verify` relates two operations, and only one of them is `this` (`src/dialect/Ops.cpp:397`):
 
 ```c++
 llvm::LogicalResult ReturnOp::verify() {
@@ -248,7 +248,7 @@ loc("docs/examples/badreturn.mlir":5:3): error: 'toy.return' op does not return 
 
 The `HasParent<"FuncOp">` trait has already guaranteed the parent, which is why the `cast` on the first line cannot fail.
 
-One detail in these verifiers is worth copying into your own dialects. An unranked type is not a mismatch, it is a shape that has not been inferred yet (`src/dialect/Ops.cpp:369`):
+One detail in these verifiers is worth copying into your own dialects. An unranked type is not a mismatch, it is a shape that has not been inferred yet (`src/dialect/Ops.cpp:415`):
 
 ```c++
   // An unranked type on either side is a shape that has not been inferred yet,

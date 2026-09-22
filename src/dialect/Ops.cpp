@@ -107,6 +107,19 @@ static void printBinaryOp(mlir::OpAsmPrinter &printer, mlir::Operation *op) {
   printer.printFunctionalType(op->getOperandTypes(), op->getResultTypes());
 }
 
+/// Element-wise ops need operands of one shape. Unranked operands have not
+/// been inferred yet and pass; the lowering loops over the lhs shape and would
+/// otherwise read past the end of a smaller rhs.
+static llvm::LogicalResult verifyElementwiseOperands(mlir::Operation *op) {
+  Type lhsType = op->getOperand(0).getType();
+  Type rhsType = op->getOperand(1).getType();
+  if (!llvm::isa<RankedTensorType>(lhsType) ||
+      !llvm::isa<RankedTensorType>(rhsType) || lhsType == rhsType)
+    return mlir::success();
+  return op->emitOpError("operand shapes must match, got ")
+         << lhsType << " and " << rhsType;
+}
+
 //===----------------------------------------------------------------------===//
 // ConstantOp
 //===----------------------------------------------------------------------===//
@@ -228,6 +241,8 @@ void AddOp::print(mlir::OpAsmPrinter &p) { printBinaryOp(p, *this); }
 
 void AddOp::inferShapes() { getResult().setType(getLhs().getType()); }
 
+llvm::LogicalResult AddOp::verify() { return verifyElementwiseOperands(*this); }
+
 //===----------------------------------------------------------------------===//
 // CastOp
 //===----------------------------------------------------------------------===//
@@ -314,6 +329,23 @@ void GenericCallOp::setCalleeFromCallable(CallInterfaceCallable callee) {
   (*this)->setAttr("callee", cast<SymbolRefAttr>(callee));
 }
 
+/// The callee must be a toy.func taking as many arguments as are passed.
+/// Without this an arity mismatch surfaces after inlining as a shape inference
+/// failure that never mentions the call.
+llvm::LogicalResult
+GenericCallOp::verifySymbolUses(SymbolTableCollection &symbolTable) {
+  auto callee =
+      symbolTable.lookupNearestSymbolFrom<FuncOp>(*this, getCalleeAttr());
+  if (!callee)
+    return emitOpError() << "'" << getCallee()
+                         << "' does not reference a toy.func";
+  if (callee.getNumArguments() != getInputs().size())
+    return emitOpError() << "passes " << getInputs().size() << " arguments to '"
+                         << getCallee() << "', which takes "
+                         << callee.getNumArguments();
+  return mlir::success();
+}
+
 Operation::operand_range GenericCallOp::getArgOperands() { return getInputs(); }
 
 MutableOperandRange GenericCallOp::getArgOperandsMutable() {
@@ -339,6 +371,8 @@ void MulOp::print(mlir::OpAsmPrinter &p) { printBinaryOp(p, *this); }
 
 void MulOp::inferShapes() { getResult().setType(getLhs().getType()); }
 
+llvm::LogicalResult MulOp::verify() { return verifyElementwiseOperands(*this); }
+
 //===----------------------------------------------------------------------===//
 // ReturnOp
 //===----------------------------------------------------------------------===//
@@ -348,6 +382,18 @@ void MulOp::inferShapes() { getResult().setType(getLhs().getType()); }
 /// This is the verifier ODS cannot generate: the constraint relates two
 /// operations, and only one of them is `this`. The HasParent<"FuncOp"> trait
 /// has already guaranteed the parent, so the cast below cannot fail.
+llvm::LogicalResult ReshapeOp::verify() {
+  auto inputType = llvm::dyn_cast<RankedTensorType>(getInput().getType());
+  if (!inputType || !inputType.hasStaticShape())
+    return mlir::success();
+  int64_t inputCount = inputType.getNumElements();
+  int64_t resultCount = getType().getNumElements();
+  if (inputCount == resultCount || inputCount == 1)
+    return mlir::success();
+  return emitOpError() << "cannot reshape " << inputCount << " elements into "
+                       << getType();
+}
+
 llvm::LogicalResult ReturnOp::verify() {
   auto function = cast<FuncOp>((*this)->getParentOp());
 

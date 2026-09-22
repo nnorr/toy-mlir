@@ -10,7 +10,7 @@ reading the chapters in order, and it means the code exists in seven versions:
 distinct contents across the seven copies and `parser/AST.cpp` only two. A change
 to the lexer is a change to seven files.
 
-Here the same language is one binary, 6,765 lines of code and ODS. The pipeline
+Here the same language is one binary, 6,837 lines of code and ODS. The pipeline
 depth is a flag rather than a build target, so `-emit=mlir` and `-emit=jit` run
 the same front end and the same dialect.
 
@@ -77,14 +77,14 @@ own `Kind` discriminator, and nothing else from LLVM.
 
 | Library | Files | Responsibility |
 | --- | --- | --- |
-| `ToyFrontend` | `Lexer.cpp` 154, `Parser.cpp` 671, `ASTDumper.cpp` 427 | Source text to AST, plus both dump formats |
-| `ToyDialect` | `ToyDialect.cpp` 79, `StructType.cpp` 183, `Ops.cpp` 455, `Folders.cpp` 64, `Interfaces.cpp` 131, `ToyCombine.cpp` 89 | The Toy IR: operations, `!toy.struct`, verifiers, folders, interfaces, canonicalization patterns |
+| `ToyFrontend` | `Lexer.cpp` 156, `Parser.cpp` 676, `ASTDumper.cpp` 427 | Source text to AST, plus both dump formats |
+| `ToyDialect` | `ToyDialect.cpp` 79, `StructType.cpp` 183, `Ops.cpp` 501, `Folders.cpp` 64, `Interfaces.cpp` 131, `ToyCombine.cpp` 89 | The Toy IR: operations, `!toy.struct`, verifiers, folders, interfaces, canonicalization patterns |
 | `ToyPasses` | `ShapeInference.cpp` 128, `LowerToAffine.cpp` 389, `LowerToLLVM.cpp` 244 | The three passes Toy writes for itself |
-| `ToyCodegen` | `MLIRGen.cpp` 687, `Pipeline.cpp` 114, `Translate.cpp` 94, `DebugInfo.cpp` 276, `ObjectEmitter.cpp` 109, `Jit.cpp` 75 | AST to IR, the pass pipeline, and every exit from MLIR |
+| `ToyCodegen` | `MLIRGen.cpp` 693, `Pipeline.cpp` 114, `Translate.cpp` 94, `DebugInfo.cpp` 276, `ObjectEmitter.cpp` 109, `Jit.cpp` 75 | AST to IR, the pass pipeline, and every exit from MLIR |
 | `toyc` | `main.cpp` 535 | Options, input loading, and the stage dispatch |
 
-`Ops.td` (489 lines) plus `ShapeInferenceInterface.td` (38) and `ToyCombine.td`
-(68) generate 6,704 lines of C++ through mlir-tblgen, which is why the dialect
+`Ops.td` (498 lines) plus `ShapeInferenceInterface.td` (38) and `ToyCombine.td`
+(72) generate 6,714 lines of C++ through mlir-tblgen, which is why the dialect
 costs about a thousand hand-written lines.
 
 ## Data flow
@@ -231,7 +231,7 @@ compilers print; `-o` redirects to a file, through the `TextOutput` class in
 
 ## Deviations from upstream
 
-These eight are the complete set. Everything else is required to match
+These thirteen are the complete set. Everything else is required to match
 `toyc-ch7` byte for byte, and `tests/compat` fails on anything not listed here.
 
 | | Deviation | Upstream behavior | Why |
@@ -242,8 +242,13 @@ These eight are the complete set. Everything else is required to match
 | D4 | A redeclared variable gets a diagnostic at the second declaration | `MLIRGen::declare` returns failure with no diagnostic, so the function silently vanishes from the output | A compile that fails should say why |
 | D5 | The structural split described above | Seven binaries, each a copy of the last | |
 | D6 | `-c`, `-g`, `--dump-ast-style`, `--target=`, `-mattr=`, `-mabi=`, `--print-pipeline` | Stops at the JIT | An object file can be linked, inspected, and run outside the compiler |
-| D7 | `var a;` is a parse error | Calls `consume(Token('='))` without checking, and the assertion inside it aborts the process, exit 134 | A one-token typo should not crash the compiler |
+| D7 | `var a;` and `def f(1)` are parse errors | Calls `consume(Token('='))` or `getId()` without checking the token, and the assertion inside aborts the process, exit 134 | A one-token typo should not crash the compiler |
 | D8 | A module with no `main` reports `JIT invocation failed: Symbols not found: [ _mlir_main ]` and exits 255 | Prints `JIT invocation failed`, then aborts on an unconsumed `llvm::Error`, exit 134 | See below |
+| D9 | A byte at or above 0x80 is an ordinary character | Reads it as a signed `char`; 0xFF equals `EOF`, so the rest of the file is dropped and the compile exits 0 | Input past a stray byte should not vanish |
+| D10 | Verifiers reject a reshape that changes the element count, element-wise operands of different shapes, and a call with the wrong number of arguments | No such verifiers: the reshape aborts under `-opt`, `[1,2,3] + [1,2]` reads past the end of the shorter operand, and a bad call surfaces as a shape inference failure | Invalid IR should fail where it is built |
+| D11 | A one-element constant reshaped to a larger shape is broadcast (`var a<2, 2> = 5.5;`) | Aborts inside `DenseElementsAttr::reshape` under `-opt` and at every lowered stage | The tutorial's own `scalar.toy` should compile |
+| D12 | A `print` that fails to generate fails the compile | Prints the diagnostic and exits 0 | A compile that reports an error should not succeed |
+| D13 | Calling a function that returns nothing is a diagnostic | Indexes the callee's empty result list and aborts, exit 134 | Same as D7 |
 
 D2 reaches further than it looks. Upstream's binop location equals its right-hand
 side's, so the two share one `!DILocation` and LLVM emits a single metadata node.
@@ -297,18 +302,20 @@ Two things are normalized, and nothing else:
   instruction difference still fails.
 
 Nothing is skipped. A program upstream itself cannot compile is compared anyway,
-because reproducing an upstream failure faithfully is an equivalence result:
-`reference/tests/**/scalar.toy` reshapes a rank-0 tensor to `2x2` and trips an
-assertion inside `DenseElementsAttr::reshape`, and both compilers abort at the
-same file and line with the same text and exit 134, at all nine stage and opt
-combinations that reach it. The summary prints `NOT COMPARED: 0`.
+because reproducing an upstream failure faithfully is an equivalence result. The
+one upstream abort not reproduced is D11: `reference/tests/**/scalar.toy`
+reshapes a rank-0 tensor to `2x2`, upstream aborts inside
+`DenseElementsAttr::reshape` at the nine stage and opt combinations that reach
+it, and this compiler broadcasts the value instead. The sweep admits that
+difference only when upstream's output is that exact assertion. The summary
+prints `NOT COMPARED: 0`.
 
 Measured, on the build in `build/`:
 
-| Corpus | Comparisons | Identical | D2 | D8 | Unexpected | Skipped |
-| --- | --- | --- | --- | --- | --- | --- |
-| 240 programs (ctest default) | 2880 | 2324 | 542 | 14 | 0 | 0 |
-| 1540 programs, seed 424242 | 18480 | 14734 | 3732 | 14 | 0 | 0 |
+| Corpus | Comparisons | Identical | D2 | D8 | D11 | Unexpected | Skipped |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 240 programs (ctest default) | 2880 | 2270 | 542 | 14 | 54 | 0 | 0 |
+| 1540 programs, seed 424242 | 18480 | 14680 | 3732 | 14 | 54 | 0 | 0 |
 
 A gate that never fails proves nothing, so it was checked against deliberate
 breakage. A mutant that renames `toy.mul` to `toy.BOGUS` fails the sweep, while
@@ -316,10 +323,10 @@ upstream compared against itself produces no differences at all. The exact count
 depends on which corpus you run, so `docs/13-testing-and-equivalence.md` gives a
 figure together with the command that reproduces it rather than a bare number.
 
-The error paths D1, D3 and D4 are diagnostics a valid program never reaches, so
-they live in `tests/compat/fixtures/` with their diffs recorded under
-`tests/compat/expected/`, which makes a change in our own diagnostics a test
-failure rather than a silent edit.
+The error paths D1, D3, D4, D7, D9, D10, D12 and D13 are diagnostics a valid
+program never reaches, so they live in `tests/compat/fixtures/` with their diffs
+recorded under `tests/compat/expected/`, which makes a change in our own
+diagnostics a test failure rather than a silent edit.
 
 ## Reading order
 

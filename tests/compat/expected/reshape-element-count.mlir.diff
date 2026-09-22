@@ -1,0 +1,12 @@
+1,8c1,2
+< module {
+<   toy.func @main() {
+<     %0 = toy.constant dense<[1.000000e+00, 2.000000e+00, 3.000000e+00]> : tensor<3xf64>
+<     %1 = toy.reshape(%0 : tensor<3xf64>) to tensor<2x2xf64>
+<     toy.print %1 : tensor<2x2xf64>
+<     toy.return
+<   }
+< }
+---
+> loc("INPUT":6:3): error: 'toy.reshape' op cannot reshape 3 elements into 'tensor<2x2xf64>'
+> error: module verification error

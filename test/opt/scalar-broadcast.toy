@@ -1,0 +1,17 @@
+# Deviation D11: a one-element constant reshaped to a larger shape is broadcast.
+#
+# This is the tutorial's own scalar.toy. Upstream aborts inside
+# DenseElementsAttr::reshape as soon as -opt folds the reshape.
+#
+# RUN: %toyc %s -emit=mlir -opt 2>&1 | %filecheck %s --check-prefix=MLIR
+# RUN: %toyc %s -emit=jit 2>&1 | %filecheck %s --check-prefix=JIT
+
+def main() {
+  var a<2, 2> = 5.5;
+  print(a);
+}
+
+# MLIR:      toy.constant dense<5.500000e+00> : tensor<2x2xf64>
+# MLIR-NOT:  toy.reshape
+# JIT:       5.500000 5.500000
+# JIT-NEXT:  5.500000 5.500000

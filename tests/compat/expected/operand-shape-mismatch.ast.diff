@@ -1,0 +1,4 @@
+11c11
+<           BinOp: + @INPUT:8:13
+---
+>           BinOp: + @INPUT:8:11

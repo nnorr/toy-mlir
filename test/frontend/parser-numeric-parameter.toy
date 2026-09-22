@@ -1,0 +1,12 @@
+# Deviation D7: a parameter that is not an identifier is a parse error.
+#
+# Upstream calls getId() on the `1` without testing the token, and the assertion
+# inside it aborts the compiler (exit 134).
+#
+# RUN: not %toyc %s -emit=ast 2>&1 | %filecheck %s
+
+def f(1) {
+  return;
+}
+
+# CHECK: Parse error (8, 7): expected 'identifier' in function parameter list

@@ -518,6 +518,11 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype() {
 
   std::vector<std::unique_ptr<VarDeclExprAST>> args;
   if (lexer.getCurToken() != ')') {
+    // Tested here for the same reason as `var a;` in parseDeclaration: getId()
+    // asserts, so `def f(1)` would otherwise abort the compiler.
+    if (lexer.getCurToken() != tok_identifier)
+      return parseError<PrototypeAST>("identifier",
+                                      "in function parameter list");
     do {
       VarType type;
       std::string name;

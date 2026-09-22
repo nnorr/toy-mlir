@@ -1,0 +1,17 @@
+# Deviation D10: a call with the wrong number of arguments fails verification.
+#
+# Upstream accepts it and later reports "unable to infer shape of operation
+# without shape inference interface", which never mentions the call.
+#
+# RUN: not %toyc %s -emit=mlir 2>&1 | %filecheck %s
+
+def f(a) {
+  return a;
+}
+
+def main() {
+  var x = f([1, 2], [3]);
+  print(x);
+}
+
+# CHECK: 'toy.generic_call' op passes 2 arguments to 'f', which takes 1

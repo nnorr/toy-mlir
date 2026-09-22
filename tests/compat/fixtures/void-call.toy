@@ -1,0 +1,10 @@
+# Deviation D13. Upstream indexes the empty result list of `show` and the
+# assertion aborts the compiler (exit 134). Here the call is diagnosed.
+
+def show(a) {
+  print(a);
+}
+
+def main() {
+  show([1, 2]);
+}

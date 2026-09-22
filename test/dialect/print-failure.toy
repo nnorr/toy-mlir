@@ -1,0 +1,12 @@
+# Deviation D12: a print whose argument fails to generate fails the compile.
+#
+# Upstream prints the diagnostic and still exits 0, even with -emit=jit.
+#
+# RUN: not %toyc %s -emit=jit 2>&1 | %filecheck %s
+
+def main() {
+  var a = [1, 2];
+  print(a.b);
+}
+
+# CHECK: invalid access into struct expression

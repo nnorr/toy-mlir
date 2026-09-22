@@ -1,0 +1,13 @@
+# Deviation D9: a byte >= 0x80 is an ordinary character, not end of file.
+#
+# Upstream reads each byte as a signed char, so the 0xFF on the line after main
+# equals EOF: the rest of the file is dropped and the compile exits 0.
+#
+# RUN: not %toyc %s -emit=ast 2>&1 | %filecheck %s
+
+def main() {
+  print([1, 2]);
+}
+ÿ
+
+# CHECK: Parse error (11, 1): {{.*}} but has Token 255

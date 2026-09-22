@@ -1,0 +1,5 @@
+1c1,2
+< PROG: /data/home/sslee/dev/08_mlir_toy/llvm-project/mlir/examples/toy/Ch7/include/toy/Lexer.h:84: llvm::StringRef toy::Lexer::getId(): Assertion `curTok == tok_identifier' failed.
+---
+> Parse error (4, 7): expected 'identifier' in function parameter list but has Token -7
+> Parse error (4, 7): expected 'nothing' at end of module but has Token -7

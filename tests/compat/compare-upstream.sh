@@ -21,13 +21,16 @@
 #                renumbers. The instruction stream must still match exactly.
 #   -emit=jit    deviation D8, and only on a module with no main: upstream aborts
 #                on an unconsumed llvm::Error, we report the same cause and exit.
-#   mlir, mlir-affine   nothing at all. Zero bytes.
+#   any stage    deviation D11, and only where upstream aborts in
+#                DenseElementsAttr::reshape: a one-element constant reshaped to a
+#                larger shape, which we broadcast instead.
+#   mlir, mlir-affine   nothing beyond D11. Zero bytes.
 #
 # Nothing is skipped: a program upstream cannot compile is compared anyway, since
-# reproducing an upstream failure faithfully is an equivalence result. D1/D3/D4
-# are diagnostics a valid program never triggers and are checked as fixtures.
+# reproducing an upstream failure faithfully is an equivalence result.
 #
-# The error paths (D1/D3/D4) are deliberately not part of that sweep: they are
+# The error paths (D1/D3/D4/D7/D9/D10/D12/D13) are diagnostics a valid program
+# never triggers, and are deliberately not part of that sweep: they are
 # expected to differ, so they live in fixtures/ with their diffs recorded in
 # EXPECTED-DIFFS.md and expected/.
 #
@@ -149,6 +152,16 @@ llvm_differs_only_by_d2() {
   [[ "$t_loc" == "$o_loc" ]]
 }
 
+# True when a difference is exactly deviation D11: upstream aborted on the
+# element-count assertion in DenseElementsAttr::reshape and we did not crash.
+# Only the upstream side is pinned: what ours prints instead is the broadcast
+# result, which has no upstream output to compare against.
+differs_only_by_d11() {
+  local theirs="$1" rc_theirs="$2" rc_ours="$3"
+  [[ $rc_theirs -eq 134 && $rc_ours -ne 134 && $rc_ours -ne 139 ]] || return 1
+  grep -q 'DenseElementsAttr::reshape(ShapedType): Assertion' <<<"$theirs"
+}
+
 compare_one() {
   local prog="$1" stage="$2" optname="$3" outdir="$4"
   # The setting travels as a name rather than as the flag itself: an empty
@@ -170,13 +183,18 @@ compare_one() {
   theirs_n="$(printf '%s\n' "$theirs" | normalize "$prog")"
 
   # A program upstream cannot compile is still compared: reproducing an upstream
-  # failure faithfully is an equivalence result, not an excuse to skip. Several
-  # reference/tests inputs abort inside MLIR (scalar.toy reshapes a rank-0
-  # tensor to 2x2 and trips an assertion in DenseElementsAttr::reshape); ours
-  # must trip the same assertion, at the same place, with the same exit code.
+  # failure faithfully is an equivalence result, not an excuse to skip. The one
+  # upstream abort we do not reproduce is D11 (scalar.toy reshapes a rank-0
+  # tensor to 2x2), checked below.
   #
   # Exit status is part of the observable behavior.
   if [[ "$rc_ours" != "$rc_theirs" ]]; then
+    if differs_only_by_d11 "$theirs_n" "$rc_theirs" "$rc_ours"; then
+      diff <(printf '%s\n' "$theirs_n") <(printf '%s\n' "$ours_n") \
+        >"$outdir/$id.d11diff"
+      echo D11 >"$outdir/$id.status"
+      return
+    fi
     # One exception: deviation D8, where upstream aborts on an unconsumed
     # llvm::Error and we report the same cause and exit normally.
     if [[ "$stage" == jit ]] &&
@@ -404,6 +422,7 @@ xargs -r -0 -n4 -P "$JOBS" "${BASH_SOURCE[0]}" --compare-one <"$TASKS"
 PASS=$(cat "$RESULTS"/*.status 2>/dev/null | grep -cx PASS)
 D2=$(cat "$RESULTS"/*.status 2>/dev/null | grep -cx D2)
 D8=$(cat "$RESULTS"/*.status 2>/dev/null | grep -cx D8)
+D11=$(cat "$RESULTS"/*.status 2>/dev/null | grep -cx D11)
 FAIL=$(cat "$RESULTS"/*.status 2>/dev/null | grep -cx FAIL)
 SKIP=$(cat "$RESULTS"/*.status 2>/dev/null | grep -cx SKIP)
 
@@ -443,6 +462,8 @@ echo "    D2-only:     $D2  (binop columns in -emit=ast, and the debug" \
      "metadata they feed in -emit=llvm)"
 echo "    D8-only:     $D8  (-emit=jit on a module with no main: upstream" \
      "aborts on an unconsumed Error, we report it and exit)"
+echo "    D11-only:    $D11  (upstream aborts reshaping a one-element constant," \
+     "we broadcast it)"
 echo "    unexpected:  $FAIL"
 echo "    NOT COMPARED: $SKIP"
 echo "  fixtures:      $FIXTURE_CHECKED checked, $FIXTURE_FAILURES unexpected"
@@ -452,5 +473,5 @@ if [[ $FAIL -gt 0 || $FIXTURE_FAILURES -gt 0 ]]; then
   echo "RESULT: FAIL"
   exit 1
 fi
-echo "RESULT: PASS -- output is equivalent to upstream except deviation D2"
+echo "RESULT: PASS -- output is equivalent to upstream except the listed deviations"
 exit 0

@@ -1,6 +1,6 @@
 # 04. MLIRGen
 
-Files: `include/toy/MLIRGen.h` (48), `src/MLIRGen.cpp` (687)
+Files: `include/toy/MLIRGen.h` (48), `src/MLIRGen.cpp` (693)
 
 ## What it does
 
@@ -119,13 +119,13 @@ On failure the half-built function is erased (`src/MLIRGen.cpp:273`), because le
 
 `mlirGenBlock` handles declarations, `return` and `print` itself (`src/MLIRGen.cpp:314`), because each carries a rule that only applies at statement level: a declaration adds to this scope, a return ends the block, and a print produces no value.
 
-`mlirGenExpr` guards the other direction (`src/MLIRGen.cpp:345`). The parser can place a `print` inside an expression, so the expression context rejects the three statement kinds. Upstream did that in its dispatch switch's `default:` case; since the visitor has a hook for every kind, the check moved to the one place that knows the context.
+`mlirGenExpr` guards the other direction (`src/MLIRGen.cpp:344`). The parser can place a `print` inside an expression, so the expression context rejects the three statement kinds. Upstream did that in its dispatch switch's `default:` case; since the visitor has a hook for every kind, the check moved to the one place that knows the context.
 
 ## What each node becomes
 
-A number is a rank-0 constant. A tensor literal is one constant holding the flattened data, built by `getConstantAttr` plus `collectData` (`src/MLIRGen.cpp:436`, `:485`). The data becomes an attribute rather than operands because it is known at compile time.
+A number is a rank-0 constant. A tensor literal is one constant holding the flattened data, built by `getConstantAttr` plus `collectData` (`src/MLIRGen.cpp:435`, `:485`). The data becomes an attribute rather than operands because it is known at compile time.
 
-A declaration with an explicit shape emits a reshape (`src/MLIRGen.cpp:527`):
+A declaration with an explicit shape emits a reshape (`src/MLIRGen.cpp:526`):
 
 ```c++
     } else if (!varType.shape.empty()) {
@@ -137,9 +137,9 @@ A declaration with an explicit shape emits a reshape (`src/MLIRGen.cpp:527`):
 
 This is why `var a<2, 3> = [[1, 2, 3], [4, 5, 6]];` produces a `toy.reshape` from `tensor<2x3xf64>` to `tensor<2x3xf64>`, a no-op that the canonicalizer removes later ([06-patterns-and-folding.md](06-patterns-and-folding.md)).
 
-`transpose` is a builtin with its own operation; any other callee becomes a `generic_call` whose result type is the callee's declared result, still unranked at this point (`src/MLIRGen.cpp:658`).
+`transpose` is a builtin with its own operation; any other callee becomes a `generic_call` whose result type is the callee's declared result, still unranked at this point (`src/MLIRGen.cpp:657`).
 
-The `.` operator is resolved at compile time. `getStructFor` recovers which struct a sub-expression evaluates to, walking through nested accesses, and `getMemberIndex` turns the member name into a position in the definition (`src/MLIRGen.cpp:368`, `:407`). Toy has no type checker, so this recovery from declarations is the closest thing to one.
+The `.` operator is resolved at compile time. `getStructFor` recovers which struct a sub-expression evaluates to, walking through nested accesses, and `getMemberIndex` turns the member name into a position in the definition (`src/MLIRGen.cpp:367`, `:407`). Toy has no type checker, so this recovery from declarations is the closest thing to one.
 
 ## Verification before handing off
 
@@ -187,9 +187,16 @@ $ ~/dev/08_mlir_toy/build/bin/toyc-ch7 docs/examples/unk.toy -emit=mlir 2>&1 | h
 loc("docs/examples/unk.toy":3:9): error: error: unknown variable 'nope'
 ```
 
-Those strings are compared against `toyc-ch7` byte for byte by `tests/compat`, so they keep the doubled prefix here too (`src/MLIRGen.cpp:586` and elsewhere). D4's message is ours, so it is not doubled. The comment at `src/MLIRGen.cpp:160` records the reasoning, so that a later reader does not "fix" one and break the sweep.
+Those strings are compared against `toyc-ch7` byte for byte by `tests/compat`, so they keep the doubled prefix here too (`src/MLIRGen.cpp:585` and elsewhere). D4's message is ours, so it is not doubled. The comment at `src/MLIRGen.cpp:160` records the reasoning, so that a later reader does not "fix" one and break the sweep.
 
-One more upstream behavior is kept deliberately: a `print` that fails to generate returns success from the block walk (`src/MLIRGen.cpp:324`), so the driver exits 0 after printing a diagnostic.
+Upstream also returns success from the block walk when a `print` fails to generate, so its driver exits 0 after printing a diagnostic. Here the failure propagates (deviation D12, `src/MLIRGen.cpp:326`).
+
+A call is an expression, so its callee must return a value. Upstream reads the result type of a function that returns nothing by indexing an empty list, and aborts. Here that is a diagnostic (deviation D13):
+
+```console
+$ build/bin/toyc tests/compat/fixtures/void-call.toy -emit=mlir 2>&1
+loc("tests/compat/fixtures/void-call.toy":9:3): error: function 'show' does not return a value
+```
 
 ## Try it
 
@@ -226,8 +233,8 @@ The callee is gone, the two reshapes are gone, the call is gone, every type is r
 
 ## Pitfalls
 
-`getType(shape)` returns an unranked tensor for an empty shape, so a declaration without a type annotation produces `tensor<*xf64>` and relies on shape inference. A shape that is present but wrong is not checked here; the reshape is emitted and the failure surfaces in `DenseElementsAttr::reshape`, which asserts. `reference/tests/Ch*/scalar.toy` hits exactly that, in both compilers.
+`getType(shape)` returns an unranked tensor for an empty shape, so a declaration without a type annotation produces `tensor<*xf64>` and relies on shape inference. A shape that is present but wrong is not checked here; the reshape is emitted and the `toy.reshape` verifier rejects it when the module is verified (deviation D10). A one-element initializer is the exception: `reference/tests/Ch*/scalar.toy` declares `var a<2, 2> = 5.5;`, which is broadcast (deviation D11). Upstream has no verifier, and both cases abort inside `DenseElementsAttr::reshape` under `-opt`.
 
 `functionMap` is consulted for the callee's result type, so calling a function defined later in the file fails with `no defined function found`. Toy has no forward declarations.
 
-The struct type is compared by identity in a struct-typed declaration (`src/MLIRGen.cpp:520`). Since MLIR types are uniqued, two structurally identical structs are the same type, and two structs with different element types can never be assigned to each other.
+The struct type is compared by identity in a struct-typed declaration (`src/MLIRGen.cpp:519`). Since MLIR types are uniqued, two structurally identical structs are the same type, and two structs with different element types can never be assigned to each other.

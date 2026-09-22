@@ -71,7 +71,7 @@ while leaving the operation itself in place. Per-operation rules always beat
 per-dialect rules, so the order of these three statements does not matter.
 
 This is why `PrintOp`'s ODS accepts a memref as well as a tensor
-(`include/toy/Ops.td:300`). The seam that makes the lowering partial lives in the
+(`include/toy/Ops.td:303`). The seam that makes the lowering partial lives in the
 operation's definition as much as in the pass.
 
 ### Partial versus full

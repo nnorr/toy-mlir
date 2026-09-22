@@ -1,0 +1,16 @@
+1,12c1,2
+< module {
+<   toy.func private @f(%arg0: tensor<*xf64>) -> tensor<*xf64> {
+<     toy.return %arg0 : tensor<*xf64>
+<   }
+<   toy.func @main() {
+<     %0 = toy.constant dense<[1.000000e+00, 2.000000e+00]> : tensor<2xf64>
+<     %1 = toy.constant dense<3.000000e+00> : tensor<1xf64>
+<     %2 = toy.generic_call @f(%0, %1) : (tensor<2xf64>, tensor<1xf64>) -> tensor<*xf64>
+<     toy.print %2 : tensor<*xf64>
+<     toy.return
+<   }
+< }
+---
+> loc("INPUT":9:11): error: 'toy.generic_call' op passes 2 arguments to 'f', which takes 1
+> error: module verification error

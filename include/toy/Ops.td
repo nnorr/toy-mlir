@@ -167,6 +167,8 @@ def AddOp : Toy_Op<"add",
   let builders = [
     OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
   ];
+
+  let hasVerifier = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -262,7 +264,8 @@ def FuncOp : Toy_Op<"func", [
 //===----------------------------------------------------------------------===//
 
 def GenericCallOp : Toy_Op<"generic_call",
-    [DeclareOpInterfaceMethods<CallOpInterface>]> {
+    [DeclareOpInterfaceMethods<CallOpInterface>,
+     DeclareOpInterfaceMethods<SymbolUserOpInterface>]> {
   let summary = "generic call operation";
   let description = [{
     A call to a user-defined function, whose result shape is not yet known:
@@ -316,6 +319,8 @@ def MulOp : Toy_Op<"mul",
   let builders = [
     OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
   ];
+
+  let hasVerifier = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -363,6 +368,10 @@ def ReshapeOp : Toy_Op<"reshape", [Pure]> {
 
   // Three DRR rules in dialect/ToyCombine.td plus one C++ registration hook.
   let hasCanonicalizer = 1;
+
+  // Element counts must match, or the input holds one element that is
+  // broadcast (`var a<2, 2> = 5.5;`).
+  let hasVerifier = 1;
 }
 
 //===----------------------------------------------------------------------===//

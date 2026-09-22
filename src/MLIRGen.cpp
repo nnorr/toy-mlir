@@ -323,11 +323,10 @@ private:
       if (auto *ret = dyn_cast<ReturnExprAST>(expr.get()))
         return failed(visitReturn(*ret)) ? mlir::failure() : mlir::success();
       if (auto *print = dyn_cast<PrintExprAST>(expr.get())) {
-        // Upstream reports success when a print fails to generate, so the
-        // driver exits 0 having printed a diagnostic. Preserved deliberately:
-        // changing it would change observable behavior on invalid input.
+        // Upstream returns success here, so a failed print exits 0 after its
+        // diagnostic (deviation D12).
         if (mlir::failed(visitPrint(*print)))
-          return mlir::success();
+          return mlir::failure();
         continue;
       }
 
@@ -656,6 +655,13 @@ private:
       return mlir::failure();
     }
     mlir::toy::FuncOp calledFunc = calledFuncIt->second;
+    // A call is an expression, so its callee has to produce a value. Upstream
+    // indexes the empty result list and aborts.
+    if (calledFunc.getFunctionType().getNumResults() == 0) {
+      mlir::emitError(location)
+          << "function '" << callee << "' does not return a value";
+      return mlir::failure();
+    }
     // The call takes the callee's declared result type, which at this point is
     // still unranked. Shape inference resolves it after inlining.
     return mlir::Value(

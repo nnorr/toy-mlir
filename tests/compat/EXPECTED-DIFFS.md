@@ -11,9 +11,10 @@ The claim being tested is narrow on purpose:
 > operator **column numbers** (deviation D2), which show directly in `-emit=ast`
 > and indirectly in `-emit=llvm` debug metadata.
 >
-> Two error paths differ deliberately and are exempted by name: D8 below, and the
-> parser/lexer/MLIRGen diagnostics D1, D3 and D4, which are checked as fixtures
-> rather than swept.
+> One valid program, the tutorial's own `scalar.toy`, differs by D11: upstream
+> aborts on it and this compiler broadcasts the scalar. Error paths differ
+> deliberately and are exempted by name: D8 below, and the diagnostics D1, D3,
+> D4, D7, D9, D10, D12 and D13, which are checked as fixtures rather than swept.
 
 Everything below is measured against `toyc-ch7` from the LLVM 24.0.0 build in
 `~/dev/08_mlir_toy/build`, not quoted from the tutorial text.
@@ -32,8 +33,12 @@ A program **upstream itself** cannot compile is still compared. Reproducing an
 upstream failure faithfully is an equivalence result, not a reason to look away,
 and nothing is skipped: the summary prints `NOT COMPARED: 0`.
 
-`reference/tests/**/scalar.toy` is the interesting case. It reshapes a rank-0
-tensor to `2x2`, which trips an assertion inside MLIR itself:
+## D11 — broadcasting a one-element reshape
+
+`reference/tests/**/scalar.toy` declares `var a<2, 2> = 5.5;`, reshaping a rank-0
+tensor to `2x2`. Upstream's own Ch2 test expects that IR to verify, and upstream
+then trips an assertion inside MLIR itself as soon as canonicalization folds the
+reshape:
 
 ```
 PROG: .../mlir/lib/IR/BuiltinAttributes.cpp:1118: DenseElementsAttr
@@ -42,10 +47,15 @@ mlir::DenseElementsAttr::reshape(ShapedType): Assertion
 "expected the same number of elements"' failed.
 ```
 
-Both compilers abort there, at the same file and line, with the same text and the
-same exit code 134, at all nine stage/opt combinations that reach it. Once
-`argv[0]` is normalized the outputs are identical, so these count as passes —
-54 of them.
+It aborts there at all nine stage/opt combinations that reach it, in each of the
+six chapter copies: 54 comparisons. This compiler's `toy.reshape` verifier admits
+a one-element input, and the fold broadcasts it with `resizeSplat`, so the
+program compiles and `-emit=jit` prints `5.5` four times.
+
+`compare-upstream.sh` admits the difference only when upstream exited 134 with
+exactly that `DenseElementsAttr::reshape` assertion and ours neither aborted nor
+crashed. Reported as `D11-only`. `-emit=ast` and `-emit=mlir` without `-opt`
+never reach the fold, so they must still match byte for byte.
 
 ## D2 — binary operator locations (the only permitted difference)
 
@@ -139,20 +149,21 @@ compared 240 programs (40 from reference/tests, 200 generated, seed 20260921)
   stages:        ast mlir mlir-affine mlir-llvm llvm jit
   opt settings:  none, -opt
   comparisons:   2880
-    identical:   2324
+    identical:   2270
     D2-only:     542
     D8-only:     14
+    D11-only:    54
     unexpected:  0
     NOT COMPARED: 0
-  fixtures:      6 checked, 0 unexpected
+  fixtures:      20 checked, 0 unexpected
 RESULT: PASS
 ```
 
-Every comparison is accounted for: 2324 byte-identical, 542 attributable to D2
-(398 AST dumps, 144 LLVM IR debug-metadata cascades), 14 to D8, none unexplained
-and none skipped.
+Every comparison is accounted for: 2270 byte-identical, 542 attributable to D2
+(398 AST dumps, 144 LLVM IR debug-metadata cascades), 14 to D8, 54 to D11, none
+unexplained and none skipped.
 
-## Error paths: D1, D3, D4
+## Error paths: D1, D3, D4, D7, D9, D10, D12, D13
 
 These are **not** part of the valid-program sweep — a valid program never
 reaches them. They live in `fixtures/` and their diffs are recorded in
@@ -231,6 +242,57 @@ exit 1
 ```
 
 Ours emits an error naming the variable, located at the second declaration.
+
+### D7 — a parameter that is not an identifier (`fixtures/numeric-parameter.toy`)
+
+Upstream's `parsePrototype` calls `getId()` on `def f(1)` without testing the
+token, and the assertion aborts the compiler:
+
+```
+$ toyc-ch7 numeric-parameter.toy -emit=mlir
+PROG: .../Ch7/include/toy/Lexer.h:84: llvm::StringRef toy::Lexer::getId(): Assertion `curTok == tok_identifier' failed.
+exit 134
+```
+
+Ours reports a parse error. `var a;`, the other half of D7, predates the
+fixtures and is covered by `test/frontend/parser-missing-initializer.toy`.
+
+### D9 — a byte at or above 0x80 (`fixtures/high-byte.toy`)
+
+Upstream stores each byte in a plain `char`, which sign-extends. The fixture's
+0xFF becomes -1, equal to `EOF`, so upstream stops reading there, drops the
+function after it, and exits 0. Ours lexes the byte as an ordinary character and
+reports it as a parse error.
+
+### D10 — verifiers (`fixtures/reshape-element-count.toy`, `operand-shape-mismatch.toy`, `call-arity.toy`)
+
+Upstream has no verifier for any of these, so `-emit=mlir` prints the invalid IR
+and exits 0. What happens next is worse: the reshape aborts in
+`DenseElementsAttr::reshape` under `-opt`; `[1,2,3] + [1,2]` lowers to a loop
+over three elements that reads past the end of the two-element buffer, and
+`-emit=jit` prints `2 4 3` (the `3` is whatever lies past the end); a call with
+the wrong number of arguments reports "unable to infer shape of operation
+without shape inference interface". Ours rejects all three when the module is
+verified, naming the counts or shapes.
+
+### D12 — a failed print (`fixtures/print-failure.toy`)
+
+Upstream's block walk returns success when a `print` fails to generate, so
+`print(a.b)` on a tensor prints `invalid access into struct expression` and still
+exits 0, emitting a module with the print missing. Ours fails the compile. The
+column of the diagnostic also differs, by D2.
+
+### D13 — calling a function that returns nothing (`fixtures/void-call.toy`)
+
+Upstream reads the callee's result type as `getResult(0)` of an empty list:
+
+```
+$ toyc-ch7 void-call.toy -emit=mlir
+PROG: .../llvm/include/llvm/ADT/ArrayRef.h:247: ... Assertion `Index < Length && "Invalid index!"' failed.
+exit 134
+```
+
+Ours reports `function 'show' does not return a value` at the call.
 
 ## Differences that are *not* expected
 

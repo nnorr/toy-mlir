@@ -1,0 +1,10 @@
+1,7c1
+< module {
+<   toy.func @main() {
+<     %0 = toy.constant dense<[1.000000e+00, 2.000000e+00]> : tensor<2xf64>
+<     toy.print %0 : tensor<2xf64>
+<     toy.return
+<   }
+< }
+---
+> Parse error (8, 1): expected ''def' or 'struct'' when parsing top level module records but has Token 255

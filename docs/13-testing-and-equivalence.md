@@ -195,21 +195,23 @@ Read `tests/compat/EXPECTED-DIFFS.md` for the measured evidence. In summary:
 | --- | --- | --- |
 | D2 | `-emit=ast` columns; `!DILocation` at the LLVM stages | the operator-location fix |
 | D8 | `-emit=jit` on a module with no `main` | upstream aborts on an unconsumed `llvm::Error`; we report the cause and exit |
-| D1, D3, D4 | fixtures only | diagnostics a valid program never triggers |
+| D11 | `scalar.toy` wherever upstream reaches the reshape fold | upstream aborts in `DenseElementsAttr::reshape`; we broadcast the scalar |
+| D1, D3, D4, D7, D9, D10, D12, D13 | fixtures only | diagnostics a valid program never triggers |
 
-At `mlir` and `mlir-affine` the requirement is byte-identical output.
+At `mlir` and `mlir-affine` the requirement is byte-identical output, D11 aside.
 
 ### Nothing is skipped
 
 An early version excluded programs upstream itself cannot compile. That hid real
-parity, so it was removed. `reference/tests/**/scalar.toy` is the interesting case:
-it reshapes a rank-0 tensor to `2x2`, tripping an assertion inside MLIR itself.
+parity, so it was removed. Reproducing an upstream crash faithfully is an
+equivalence result, not a reason to look away. The summary prints
+`NOT COMPARED: 0`.
 
-Both compilers abort at the same file and line in `DenseElementsAttr::reshape`,
-with the same text and exit code 134, at all nine stage/opt combinations that reach
-it. Once `argv[0]` is normalized the outputs are identical, so these count as 54
-passes. Reproducing an upstream crash faithfully is an equivalence result, not a
-reason to look away. The summary prints `NOT COMPARED: 0`.
+`reference/tests/**/scalar.toy` is the one upstream crash not reproduced. It
+reshapes a rank-0 tensor to `2x2`, and upstream aborts inside
+`DenseElementsAttr::reshape` at all nine stage/opt combinations that reach the
+fold. This compiler broadcasts the scalar (D11), so those 54 comparisons are
+classified `D11-only`, and only when upstream's output is that exact assertion.
 
 ### Measured results
 
@@ -220,13 +222,14 @@ compared 240 programs (40 from reference/tests, 200 generated with --seed 202609
   stages:        ast mlir mlir-affine mlir-llvm llvm jit
   opt settings:  none, -opt
   comparisons:   2880
-    identical:   2324
+    identical:   2270
     D2-only:     542
     D8-only:     14
+    D11-only:    54
     unexpected:  0
     NOT COMPARED: 0
-  fixtures:      6 checked, 0 unexpected
-RESULT: PASS -- output is equivalent to upstream except deviation D2
+  fixtures:      20 checked, 0 unexpected
+RESULT: PASS -- output is equivalent to upstream except the listed deviations
 ```
 
 Deep run:
@@ -234,9 +237,10 @@ Deep run:
 ```console
 $ time bash tests/compat/compare-upstream.sh --count 1500 --seed 424242
   comparisons:   18480
-    identical:   14734
+    identical:   14680
     D2-only:     3732
     D8-only:     14
+    D11-only:    54
     unexpected:  0
     NOT COMPARED: 0
 RESULT: PASS
@@ -263,12 +267,15 @@ $ TOYC=build/mutant.sh bash tests/compat/compare-upstream.sh --no-random
     identical:   351
     D2-only:     38
     D8-only:     14
-    unexpected:  77
+    D11-only:    54
+    unexpected:  23
     NOT COMPARED: 0
 RESULT: FAIL
 ```
 
-77 unexpected differences and a `FAIL`. The D2 and D8 exemptions did not blunt it.
+23 unexpected differences and a `FAIL`. The D2, D8 and D11 exemptions did not
+blunt it. (Before D11 this printed 77: the other 54 were `scalar.toy` aborting
+under the wrapper's name, which `argv[0]` normalization does not recognise.)
 Worth re-running after any change to the normalization rules.
 
 To add a deviation, it needs an entry in `EXPECTED-DIFFS.md` explaining the

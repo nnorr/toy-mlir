@@ -1,0 +1,11 @@
+# Deviation D10. Upstream accepts the call and later reports "unable to infer
+# shape", which never mentions the call. Here the verifier names both counts.
+
+def f(a) {
+  return a;
+}
+
+def main() {
+  var x = f([1, 2], [3]);
+  print(x);
+}

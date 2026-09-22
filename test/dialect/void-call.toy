@@ -1,0 +1,15 @@
+# Deviation D13: calling a function that returns nothing is a diagnostic.
+#
+# Upstream indexes the callee's empty result list and aborts (exit 134).
+#
+# RUN: not %toyc %s -emit=mlir 2>&1 | %filecheck %s
+
+def show(a) {
+  print(a);
+}
+
+def main() {
+  show([1, 2]);
+}
+
+# CHECK: loc("{{.*}}void-call.toy":12:3){{.*}}function 'show' does not return a value

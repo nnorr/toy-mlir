@@ -1,0 +1,8 @@
+# Deviation D10. Upstream has no verifier on toy.reshape: -emit=mlir prints the
+# reshape, and -opt aborts inside DenseElementsAttr::reshape. Here the
+# verifier rejects it.
+
+def main() {
+  var a<2, 2> = [1, 2, 3];
+  print(a);
+}

@@ -1,6 +1,6 @@
 # 03. Parser
 
-Files: `include/toy/Parser.h` (131), `src/Parser.cpp` (671)
+Files: `include/toy/Parser.h` (131), `src/Parser.cpp` (676)
 
 ## What it does
 
@@ -31,7 +31,7 @@ struct-literal    ::= '{' (struct-literal | tensor-literal | number) (',' ...)* 
 
 ## Precedence climbing
 
-Four operators, with `.` binding tightest (`src/Parser.cpp:651`):
+Four operators, with `.` binding tightest (`src/Parser.cpp:656`):
 
 ```c++
 int Parser::getTokPrecedence() {
@@ -113,7 +113,7 @@ Two forms of declaration exist, and the leading token does not distinguish them 
 
 `parseCallTail` and `parseTypedDeclarationTail` are file-local helpers because both tails have two callers, and `Parser`'s interface lists only the grammar's own productions. They take the recursion back into `parseExpression` as a `llvm::function_ref`. `ARCHITECTURE.md` notes that making them private members is a cleaner alternative.
 
-Parameters have the same ambiguity, resolved the same way (`src/Parser.cpp:525`): the first identifier is only known to be a type once a second one follows it.
+Parameters have the same ambiguity, resolved the same way (`src/Parser.cpp:530`): the first identifier is only known to be a type once a second one follows it.
 
 `print` is recognised in `parseCallTail` and becomes its own node rather than a call (`src/Parser.cpp:91`), because it lowers to `toy.print` instead of to a call.
 
@@ -234,9 +234,17 @@ Parse error (6, 6): expected 'nothing' at end of module but has Token 59 ';'
 
 So D7 gives `var a;` the diagnostic upstream already uses for the same mistake in the other declaration form, including the trailing end-of-module line.
 
+The parameter list had the same kind of bug. Upstream's `parsePrototype` calls `getId()` on the first parameter without testing the token, so `def f(1)` aborts on the assertion in `getId()`. D7 covers it too: the token is tested first (`src/Parser.cpp:520`).
+
+```console
+$ build/bin/toyc tests/compat/fixtures/numeric-parameter.toy -emit=ast 2>&1
+Parse error (4, 7): expected 'identifier' in function parameter list but has Token -7
+Parse error (4, 7): expected 'nothing' at end of module but has Token -7
+```
+
 ## One upstream quirk kept on purpose
 
-A record that fails after consuming the input up to EOF yields a successful empty module even though a diagnostic was printed. A function missing its closing brace reports `expected '}'` and still dumps `Module:` with exit 0. The comment at `src/Parser.cpp:626` marks this as upstream Ch7 behavior that `tests/compat` pins, so it must not be "fixed" here.
+A record that fails after consuming the input up to EOF yields a successful empty module even though a diagnostic was printed. A function missing its closing brace reports `expected '}'` and still dumps `Module:` with exit 0. The comment at `src/Parser.cpp:631` marks this as upstream Ch7 behavior that `tests/compat` pins, so it must not be "fixed" here.
 
 A related trap: upstream Ch1 reports `expected 'def' in prototype` for a file containing only comments, because its `parseModule` loops on `parseDefinition` instead of switching on the token. Ch7 accepts that file silently, and its own lit test asserts `CHECK-NOT: Parse error`. This is the Ch7 grammar, so silence is correct.
 

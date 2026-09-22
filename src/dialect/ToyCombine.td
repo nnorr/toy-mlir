@@ -47,9 +47,13 @@ def ReshapeReshapeOptPattern : Pat<(ReshapeOp(ReshapeOp $arg)),
 //===----------------------------------------------------------------------===//
 
 // Reshape(Constant(x)) = Constant(x reshaped). The new attribute has to be
-// computed, not pattern-matched, so DRR delegates to a C++ expression.
+// computed, not pattern-matched, so DRR delegates to a C++ expression. A
+// one-element constant is broadcast (`var a<2, 2> = 5.5;`): the verifier admits
+// it, and reshape() would assert on the element count.
 def ReshapeConstant :
-  NativeCodeCall<"$0.reshape(::llvm::cast<ShapedType>($1.getType()))">;
+  NativeCodeCall<"$0.isSplat()"
+                 " ? $0.resizeSplat(::llvm::cast<ShapedType>($1.getType()))"
+                 " : $0.reshape(::llvm::cast<ShapedType>($1.getType()))">;
 def FoldConstantReshapeOptPattern : Pat<
   (ReshapeOp:$res (ConstantOp $arg)),
   (ConstantOp (ReshapeConstant $arg, $res))>;

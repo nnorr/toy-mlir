@@ -1,6 +1,6 @@
 # 01. Lexer
 
-Files: `include/toy/Lexer.h`, `src/Lexer.cpp` (147 + 154 lines)
+Files: `include/toy/Lexer.h`, `src/Lexer.cpp` (147 + 156 lines)
 
 ## What it does
 
@@ -71,7 +71,9 @@ int Lexer::getNextChar() {
   // before the character is handed out and reset by the newline that ends the
   // line, which makes the first character of the next line column 1.
   ++curCol;
-  int nextChar = buffer.front();
+  // Through unsigned char: a plain char sign-extends bytes >= 0x80, and 0xFF
+  // would then compare equal to EOF and end the file early.
+  int nextChar = static_cast<unsigned char>(buffer.front());
   buffer = buffer.drop_front();
   if (nextChar == '\n') {
     ++curLineNum;
@@ -81,7 +83,7 @@ int Lexer::getNextChar() {
 }
 ```
 
-`lexToken()` then records the position after skipping whitespace and before reading the token's characters (`src/Lexer.cpp:86`):
+`lexToken()` then records the position after skipping whitespace and before reading the token's characters (`src/Lexer.cpp:88`):
 
 ```c++
   while (lastChar != EOF && isspace(lastChar))
@@ -105,11 +107,11 @@ struct Location {
 
 ## Identifiers, keywords, comments
 
-Keyword recognition happens after an identifier has been lexed, by comparing the string (`src/Lexer.cpp:101`). There is no keyword table, and `return`, `def`, `struct` and `var` are the only four.
+Keyword recognition happens after an identifier has been lexed, by comparing the string (`src/Lexer.cpp:103`). There is no keyword table, and `return`, `def`, `struct` and `var` are the only four.
 
 An identifier is `[a-zA-Z][a-zA-Z0-9_]*`, so `_` is allowed after the first character. (Toy's own lexer permits this; the Kaleidoscope compiler in `06_llvm_tutorial` does not, which is worth knowing if you compare the two.)
 
-Comments run from `#` to the end of the line, and the lexer restarts itself rather than returning something (`src/Lexer.cpp:133`):
+Comments run from `#` to the end of the line, and the lexer restarts itself rather than returning something (`src/Lexer.cpp:135`):
 
 ```c++
   if (lastChar == '#') {
@@ -126,13 +128,13 @@ Comments run from `#` to the end of the line, and the lexer restarts itself rath
 
 The recursive call matters for locations. Restarting re-runs the whitespace skip and re-records `lastLocation`, so a token preceded by a comment still reports its own position.
 
-EOF is never consumed (`src/Lexer.cpp:145`). Every later call keeps returning `tok_eof`, which is what lets the parser's loops test for it repeatedly.
+EOF is never consumed (`src/Lexer.cpp:147`). Every later call keeps returning `tok_eof`, which is what lets the parser's loops test for it repeatedly.
 
 ## Deviation D1: malformed numbers are reported
 
 A Toy number is lexed as `[0-9]([0-9.])*`, which accepts text that is not a number. `strtod` then stops at the second `.`, so `1.23.45` silently becomes `1.23` and the rest disappears.
 
-This lexer counts the dots and reports the problem (`src/Lexer.cpp:113`):
+This lexer counts the dots and reports the problem (`src/Lexer.cpp:115`):
 
 ```c++
   if (isdigit(lastChar)) {

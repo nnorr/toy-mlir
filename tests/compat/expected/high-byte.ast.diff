@@ -1,0 +1,12 @@
+1,9c1
+<   Module:
+<     Function 
+<       Proto 'main' @INPUT:5:1
+<       Params: []
+<       Block {
+<         Print [ @INPUT:6:3
+<           Literal: <2>[ 1.000000e+00, 2.000000e+00] @INPUT:6:9
+<         ]
+<       } // Block
+---
+> Parse error (8, 1): expected ''def' or 'struct'' when parsing top level module records but has Token 255
