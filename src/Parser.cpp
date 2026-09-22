@@ -205,8 +205,8 @@ std::unique_ptr<ExprAST> Parser::parseTensorLiteralExpr() {
 
     lexer.getNextToken(); // eat ,
   } while (true);
-  if (values.empty())
-    return parseError<ExprAST>("<something>", "to fill literal expression");
+  // No emptiness check: every pass through the loop either added a value or
+  // returned an error, so `[]` has already been reported as "<num> or [".
   lexer.getNextToken(); // eat ]
 
   // The shape is recovered from the nesting rather than declared: this level
@@ -253,8 +253,6 @@ std::unique_ptr<ExprAST> Parser::parseStructLiteralExpr() {
         return nullptr;
     } else if (lexer.getCurToken() == tok_number) {
       values.push_back(parseNumberExpr());
-      if (!values.back())
-        return nullptr;
     } else {
       if (lexer.getCurToken() != '{')
         return parseError<ExprAST>("{, [, or number",
@@ -272,9 +270,7 @@ std::unique_ptr<ExprAST> Parser::parseStructLiteralExpr() {
 
     lexer.getNextToken(); // eat ,
   } while (true);
-  if (values.empty())
-    return parseError<ExprAST>("<something>",
-                               "to fill struct literal expression");
+  // As in parseTensorLiteralExpr, `{}` has already been reported.
   lexer.getNextToken(); // eat }
 
   return std::make_unique<StructLiteralExprAST>(std::move(loc),

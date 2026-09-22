@@ -1,0 +1,43 @@
+# MLIRGen's diagnostics, one program per RUN line read from stdin. These are
+# programs that parse but have no meaning: unknown names, a statement used as
+# a value, struct accesses that resolve to no member. The ACCESS cases each
+# stop at a different step of getStructFor/getMemberIndex.
+#
+# The doubled "error: error:" prefixes are upstream's, compared byte for byte
+# against toyc-ch7.
+
+# RUN: echo 'def main() { print(x); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=UNKNOWN-VAR
+# RUN: echo 'def main() { var x = print([1]); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=PRINT-IN-EXPR
+# RUN: echo 'def main() { print(transpose([1], [2])); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=TRANSPOSE-ARGS
+# RUN: echo 'def main() { print(g([1])); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=UNKNOWN-FUNC
+# RUN: echo 'struct A { var a; } struct B { var a; var b; } def main() { B b = {[1]}; print(b.a); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=STRUCT-MISMATCH
+# RUN: echo 'def f(Nope n) { return; } def main() { }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=PARAM-TYPE
+# RUN: echo 'def f(a) { print(q); } def main() { }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=BODY
+# RUN: echo 'def f(a) { return a; } def main() { print(f(q)); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=CALL-ARG
+# RUN: echo 'def main() { print(q + [1]); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=BINOP-LHS
+# RUN: echo 'def main() { print([1] + q); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=BINOP-RHS
+# RUN: echo 'def f() { return q; } def main() { }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=RETURN
+# RUN: echo 'struct A { var a; } def main() { A x = {[1]}; print(x.b); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=ACCESS-MEMBER
+# RUN: echo 'struct I { var v; } struct O { var i; I j; } def main() { O o = {[1], {[2]}}; print(o.j.w); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=ACCESS-NESTED-MEMBER
+# RUN: echo 'struct I { var v; } struct O { var i; I j; } def main() { O o = {[1], {[2]}}; print(o.zz.v); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=ACCESS-NESTED-MISSING
+# RUN: echo 'def main() { var t = [1]; print(t.a.b); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=ACCESS-TENSOR
+# RUN: echo 'struct A { var a; } def main() { A x = {[1]}; print((x.1).a); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=ACCESS-NOT-NAME
+# RUN: echo 'struct A { var a; } def main() { A x = {[1]}; print(([1] + [2]).a); }' | not %toyc - -emit=mlir 2>&1 | %filecheck %s --check-prefix=ACCESS-NOT-ACCESS
+
+# UNKNOWN-VAR: loc("-":1:20): error: error: unknown variable 'x'
+# PRINT-IN-EXPR: loc("-":1:22): error: MLIR codegen encountered an unhandled expr kind '8'
+# TRANSPOSE-ARGS: loc("-":1:20): error: MLIR codegen encountered an error: toy.transpose does not accept multiple arguments
+# UNKNOWN-FUNC: loc("-":1:20): error: no defined function found for 'g'
+# STRUCT-MISMATCH: loc("-":1:61): error: struct type of initializer is different than the variable declaration. Got '!toy.struct<tensor<*xf64>>', but expected '!toy.struct<tensor<*xf64>, tensor<*xf64>>'
+# PARAM-TYPE: loc("-":1:7): error: error: unknown struct type 'Nope'
+# BODY: loc("-":1:18): error: error: unknown variable 'q'
+# CALL-ARG: loc("-":1:45): error: error: unknown variable 'q'
+# BINOP-LHS: loc("-":1:20): error: error: unknown variable 'q'
+# BINOP-RHS: loc("-":1:26): error: error: unknown variable 'q'
+# RETURN: loc("-":1:18): error: error: unknown variable 'q'
+# ACCESS-MEMBER: loc("-":1:54): error: invalid access into struct expression
+# ACCESS-NESTED-MEMBER: loc("-":1:88): error: invalid access into struct expression
+# ACCESS-NESTED-MISSING: loc("-":1:86): error: invalid access into struct expression
+# ACCESS-TENSOR: loc("-":1:34): error: invalid access into struct expression
+# ACCESS-NOT-NAME: loc("-":1:55): error: invalid access into struct expression
+# ACCESS-NOT-ACCESS: loc("-":1:64): error: invalid access into struct expression

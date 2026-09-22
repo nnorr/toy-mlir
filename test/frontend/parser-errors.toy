@@ -1,0 +1,87 @@
+# One malformed program per RUN line, read from stdin, each reaching a
+# different error branch of the parser. Every production reports its first
+# error and returns null, so a file can only ever test one; stdin keeps them in
+# one place. Columns are the lexer's, 1-based; the EOF case reports column 0.
+#
+# "identified" and "<single arg>" are upstream's wording, compared byte for
+# byte against toyc-ch7.
+
+# RUN: echo 'def main() { var a = (1; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=PAREN
+# RUN: echo 'def main() { f(1 2); }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=CALL-SEP
+# RUN: echo 'def main() { f(<); }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=CALL-ARG
+# RUN: echo 'def main() { print(1, 2); }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=PRINT-ARGS
+# RUN: echo 'def main() { S = 1; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=TYPED-NAME
+# RUN: echo 'def main() { S s; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=TYPED-INIT
+# RUN: echo 'def main() { S s = ; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=TYPED-EXPR
+# RUN: echo 'def main() { var 1 = 2; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=VAR-NAME
+# RUN: echo 'def main() { var a<2, 3 = [1]; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=TYPE-END
+# RUN: echo 'def main() { var a = [a]; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=LIT-ELEM
+# RUN: echo 'def main() { var a = []; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=LIT-EMPTY
+# RUN: echo 'def main() { var a = [1 2]; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=LIT-SEP
+# RUN: echo 'def main() { var a = [[1, x]]; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=LIT-NESTED
+# RUN: echo 'def main() { var a = [1, [2]]; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=RAGGED-NUM-FIRST
+# RUN: echo 'def main() { var a = [[1], 2]; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=RAGGED-LIT-FIRST
+# RUN: echo 'def main() { var a = [[1], [1, 2]]; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=RAGGED-DIMS
+# RUN: echo 'def main() { var a = {x}; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=STRUCT-ELEM
+# RUN: echo 'def main() { var a = {}; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=STRUCT-EMPTY
+# RUN: echo 'def main() { var a = {1 2}; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=STRUCT-SEP
+# RUN: echo 'def main() { var a = {{x}}; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=STRUCT-NESTED
+# RUN: echo 'def main() { print(1 + ); }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=BINOP-RHS
+# RUN: echo 'def main() { print(1 + 2 * ); }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=BINOP-RHS-NESTED
+# RUN: echo 'def main() { return <; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=RETURN-EXPR
+# RUN: echo 'def main() { (<); }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=STMT-EXPR
+# RUN: echo 'def main() { print(1) }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=STMT-SEMI
+# RUN: echo 'def main() print(1);' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=BLOCK-OPEN
+# RUN: echo 'def 1() { }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=PROTO-NAME
+# RUN: echo 'def f { }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=PROTO-OPEN
+# RUN: echo 'def f(a, ) { }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=PROTO-COMMA
+# RUN: echo 'def f(a b c) { }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=PROTO-CLOSE
+# RUN: echo 'struct { var a; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=STRUCT-NAME
+# RUN: echo 'struct S var a;' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=STRUCT-OPEN
+# RUN: echo 'struct S { var a }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=STRUCT-SEMI
+# RUN: echo 'struct S { var 1; }' | not %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=STRUCT-MEMBER
+# A block cut off by the end of the file is reported, yet the compile succeeds:
+# the failed record consumed the input up to EOF, so parseModule sees a clean
+# end and returns an empty module. That is upstream Ch7's behavior, pinned by
+# tests/compat (see the comment in Parser::parseModule), hence no `not` here.
+# RUN: echo 'def main() { print(1);' | %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=BLOCK-CLOSE
+
+# A run of empty statements is legal and produces nothing.
+# RUN: echo 'def main() { ;; print(1);; }' | %toyc - -emit=ast 2>&1 | %filecheck %s --check-prefix=EMPTY-STMT
+
+# EMPTY-STMT: Print
+# PAREN: Parse error (1, 24): expected ')' to close expression with parentheses
+# CALL-SEP: Parse error (1, 18): expected ', or )' in argument list
+# CALL-ARG: unknown token '60' when expecting an expression
+# PRINT-ARGS: Parse error (1, 25): expected '<single arg>' as argument to print()
+# TYPED-NAME: Parse error (1, 16): expected 'name' in variable declaration
+# TYPED-INIT: Parse error (1, 17): expected 'initializer' in variable declaration
+# TYPED-EXPR: Parse error (1, 20): expected 'expression' as the initializer of a variable declaration
+# VAR-NAME: Parse error (1, 18): expected 'identified' after 'var' declaration
+# TYPE-END: Parse error (1, 25): expected '>' to end type
+# LIT-ELEM: Parse error (1, 23): expected '<num> or [' in literal expression
+# LIT-EMPTY: Parse error (1, 23): expected '<num> or [' in literal expression
+# LIT-SEP: Parse error (1, 25): expected '] or ,' in literal expression
+# LIT-NESTED: Parse error (1, 27): expected '<num> or [' in literal expression
+# RAGGED-NUM-FIRST: Parse error (1, 30): expected 'uniform well-nested dimensions' inside literal expression
+# RAGGED-LIT-FIRST: Parse error (1, 30): expected 'uniform well-nested dimensions' inside literal expression
+# RAGGED-DIMS: Parse error (1, 35): expected 'uniform well-nested dimensions' inside literal expression
+# STRUCT-ELEM: Parse error (1, 23): expected '{, [, or number' in struct literal expression
+# STRUCT-EMPTY: Parse error (1, 23): expected '{, [, or number' in struct literal expression
+# STRUCT-SEP: Parse error (1, 25): expected '} or ,' in struct literal expression
+# STRUCT-NESTED: Parse error (1, 24): expected '{, [, or number' in struct literal expression
+# BINOP-RHS: unknown token '41' when expecting an expression
+# BINOP-RHS-NESTED: unknown token '41' when expecting an expression
+# RETURN-EXPR: unknown token '60' when expecting an expression
+# STMT-EXPR: unknown token '60' when expecting an expression
+# STMT-SEMI: Parse error (1, 23): expected ';' after expression
+# BLOCK-OPEN: Parse error (1, 12): expected '{' to begin block
+# BLOCK-CLOSE: Parse error (2, 0): expected '}' to close block
+# PROTO-NAME: Parse error (1, 5): expected 'function name' in prototype
+# PROTO-OPEN: Parse error (1, 7): expected '(' in prototype
+# PROTO-COMMA: Parse error (1, 10): expected 'identifier' after ',' in function parameter list
+# PROTO-CLOSE: Parse error (1, 11): expected ')' to end function prototype
+# STRUCT-NAME: Parse error (1, 8): expected 'name' in struct definition
+# STRUCT-OPEN: Parse error (1, 10): expected '{' in struct definition
+# STRUCT-SEMI: Parse error (1, 18): expected ';' after variable in struct definition
+# STRUCT-MEMBER: Parse error (1, 16): expected 'identified' after 'var' declaration

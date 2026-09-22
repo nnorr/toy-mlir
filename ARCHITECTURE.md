@@ -10,7 +10,7 @@ reading the chapters in order, and it means the code exists in seven versions:
 distinct contents across the seven copies and `parser/AST.cpp` only two. A change
 to the lexer is a change to seven files.
 
-Here the same language is one binary, 6,780 lines of code and ODS. The pipeline
+Here the same language is one binary, 6,776 lines of code and ODS. The pipeline
 depth is a flag rather than a build target, so `-emit=mlir` and `-emit=jit` run
 the same front end and the same dialect.
 
@@ -77,7 +77,7 @@ own `Kind` discriminator, and nothing else from LLVM.
 
 | Library | Files | Responsibility |
 | --- | --- | --- |
-| `ToyFrontend` | `Lexer.cpp` 130, `Parser.cpp` 676, `ASTDumper.cpp` 427 | Source text to AST, plus both dump formats |
+| `ToyFrontend` | `Lexer.cpp` 130, `Parser.cpp` 672, `ASTDumper.cpp` 427 | Source text to AST, plus both dump formats |
 | `ToyDialect` | `ToyDialect.cpp` 79, `StructType.cpp` 183, `Ops.cpp` 501, `Folders.cpp` 64, `Interfaces.cpp` 131, `ToyCombine.cpp` 89 | The Toy IR: operations, `!toy.struct`, verifiers, folders, interfaces, canonicalization patterns |
 | `ToyPasses` | `ShapeInference.cpp` 128, `LowerToAffine.cpp` 389, `LowerToLLVM.cpp` 244 | The three passes Toy writes for itself |
 | `ToyCodegen` | `MLIRGen.cpp` 694, `Pipeline.cpp` 92, `Translate.cpp` 94, `DebugInfo.cpp` 276, `ObjectEmitter.cpp` 109, `Jit.cpp` 75 | AST to IR, the pass pipeline, and every exit from MLIR |

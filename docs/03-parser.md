@@ -1,6 +1,6 @@
 # 03. Parser
 
-Files: `include/toy/Parser.h` (131), `src/Parser.cpp` (676)
+Files: `include/toy/Parser.h` (131), `src/Parser.cpp` (672)
 
 ## What it does
 
@@ -31,7 +31,7 @@ struct-literal    ::= '{' (struct-literal | tensor-literal | number) (',' ...)* 
 
 ## Precedence climbing
 
-Four operators, with `.` binding tightest (`src/Parser.cpp:656`):
+Four operators, with `.` binding tightest (`src/Parser.cpp:652`):
 
 ```c++
 int Parser::getTokPrecedence() {
@@ -62,7 +62,7 @@ $ build/bin/toyc docs/examples/minus.toy -emit=mlir 2>&1 | head -1
 loc("docs/examples/minus.toy":4:13): error: invalid binary operator '-'
 ```
 
-The loop in `parseBinOpRHS` is the standard one (`src/Parser.cpp:307`): stop when the next operator binds less tightly than the caller's, and recurse when it binds more tightly.
+The loop in `parseBinOpRHS` is the standard one (`src/Parser.cpp:303`): stop when the next operator binds less tightly than the caller's, and recurse when it binds more tightly.
 
 ```c++
     // If the operator after rhs binds more tightly, rhs belongs to it.
@@ -93,7 +93,7 @@ Parse error (3, 22): expected 'expression' as the initializer of a variable decl
 
 ## Declarations need two tokens of context
 
-Two forms of declaration exist, and the leading token does not distinguish them from a call. Inside a block, an identifier can start either a call (`transpose(a);`) or a typed declaration (`Struct value = ...;`), and one token of lookahead is not enough. `parseBlock` consumes the identifier and then decides (`src/Parser.cpp:452`):
+Two forms of declaration exist, and the leading token does not distinguish them from a call. Inside a block, an identifier can start either a call (`transpose(a);`) or a typed declaration (`Struct value = ...;`), and one token of lookahead is not enough. `parseBlock` consumes the identifier and then decides (`src/Parser.cpp:448`):
 
 ```c++
     if (lexer.getCurToken() == tok_identifier) {
@@ -113,7 +113,7 @@ Two forms of declaration exist, and the leading token does not distinguish them 
 
 `parseCallTail` and `parseTypedDeclarationTail` are file-local helpers because both tails have two callers, and `Parser`'s interface lists only the grammar's own productions. They take the recursion back into `parseExpression` as a `llvm::function_ref`. `ARCHITECTURE.md` notes that making them private members is a cleaner alternative.
 
-Parameters have the same ambiguity, resolved the same way (`src/Parser.cpp:530`): the first identifier is only known to be a type once a second one follows it.
+Parameters have the same ambiguity, resolved the same way (`src/Parser.cpp:526`): the first identifier is only known to be a type once a second one follows it.
 
 `print` is recognised in `parseCallTail` and becomes its own node rather than a call (`src/Parser.cpp:91`), because it lowers to `toy.print` instead of to a call.
 
@@ -138,7 +138,7 @@ The format is upstream's, and several lit tests match on it.
 
 ## Deviation D2: a binary operator's location is its own
 
-Upstream reads the location after consuming the operator, so the recorded position is the start of the right-hand operand. This parser reads it first (`src/Parser.cpp:317`):
+Upstream reads the location after consuming the operator, so the recorded position is the start of the right-hand operand. This parser reads it first (`src/Parser.cpp:313`):
 
 ```c++
     int binOp = lexer.getCurToken();
@@ -169,7 +169,7 @@ At `-emit=llvm` the same change shows up as an extra `!DILocation` node, because
 
 ## Deviation D3: a failed initializer is reported and propagated
 
-Upstream builds a `VarDeclExprAST` with a null initializer when the expression fails to parse, and exits 0. This parser reports what was expected and returns null (`src/Parser.cpp:419`):
+Upstream builds a `VarDeclExprAST` with a null initializer when the expression fails to parse, and exits 0. This parser reports what was expected and returns null (`src/Parser.cpp:415`):
 
 ```c++
       expr = parseExpression();
@@ -197,7 +197,7 @@ Upstream's dump shows the declaration with nothing under it, and the compilation
 
 ## Deviation D7: a missing `=` no longer aborts the compiler
 
-Upstream hands the `=` straight to `Lexer::consume()`, whose assertion aborts the process when the token is something else. `var a;` therefore takes down the compiler. This parser tests for it first (`src/Parser.cpp:414`):
+Upstream hands the `=` straight to `Lexer::consume()`, whose assertion aborts the process when the token is something else. `var a;` therefore takes down the compiler. This parser tests for it first (`src/Parser.cpp:410`):
 
 ```c++
       // Test for the '=' rather than handing it straight to consume(), whose
@@ -234,7 +234,7 @@ Parse error (6, 6): expected 'nothing' at end of module but has Token 59 ';'
 
 So D7 gives `var a;` the diagnostic upstream already uses for the same mistake in the other declaration form, including the trailing end-of-module line.
 
-The parameter list had the same kind of bug. Upstream's `parsePrototype` calls `getId()` on the first parameter without testing the token, so `def f(1)` aborts on the assertion in `getId()`. D7 covers it too: the token is tested first (`src/Parser.cpp:520`).
+The parameter list had the same kind of bug. Upstream's `parsePrototype` calls `getId()` on the first parameter without testing the token, so `def f(1)` aborts on the assertion in `getId()`. D7 covers it too: the token is tested first (`src/Parser.cpp:516`).
 
 ```console
 $ build/bin/toyc tests/compat/fixtures/numeric-parameter.toy -emit=ast 2>&1
@@ -244,7 +244,7 @@ Parse error (4, 7): expected 'nothing' at end of module but has Token -7
 
 ## One upstream quirk kept on purpose
 
-A record that fails after consuming the input up to EOF yields a successful empty module even though a diagnostic was printed. A function missing its closing brace reports `expected '}'` and still dumps `Module:` with exit 0. The comment at `src/Parser.cpp:631` marks this as upstream Ch7 behavior that `tests/compat` pins, so it must not be "fixed" here.
+A record that fails after consuming the input up to EOF yields a successful empty module even though a diagnostic was printed. A function missing its closing brace reports `expected '}'` and still dumps `Module:` with exit 0. The comment at `src/Parser.cpp:627` marks this as upstream Ch7 behavior that `tests/compat` pins, so it must not be "fixed" here.
 
 A related trap: upstream Ch1 reports `expected 'def' in prototype` for a file containing only comments, because its `parseModule` loops on `parseDefinition` instead of switching on the token. Ch7 accepts that file silently, and its own lit test asserts `CHECK-NOT: Parse error`. This is the Ch7 grammar, so silence is correct.
 
@@ -259,7 +259,7 @@ The parser's own tests are in `tests/FrontendTests.cpp`, covering precedence, sh
 
 ## Pitfalls
 
-`parsePrimary` returns null for `;` and `}` without reporting anything (`src/Parser.cpp:300`), which is how an empty statement and an empty block terminate. A caller that treats null as "error already reported" is therefore wrong in those two cases, which is what made D3's diagnostic necessary.
+`parsePrimary` returns null for `;` and `}` without reporting anything (`src/Parser.cpp:296`), which is how an empty statement and an empty block terminate. A caller that treats null as "error already reported" is therefore wrong in those two cases, which is what made D3's diagnostic necessary.
 
 `parseType` accepts `<>` and any number of dimensions. Toy is documented as rank 2 or less, and nothing here enforces it; a rank-3 declaration reaches the dialect and fails there.
 

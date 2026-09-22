@@ -1,0 +1,27 @@
+# A struct literal holding a bare number and a nested struct literal. The number
+# becomes a rank-0 tensor and the inner literal an inner !toy.struct, which is
+# structurally the type of I, so the declaration type-checks. After inlining,
+# both accesses fold away to constants.
+#
+# RUN: %toyc %s -emit=mlir 2>&1 | %filecheck %s --check-prefix=MLIR
+# RUN: %toyc %s -emit=jit -opt 2>&1 | %filecheck %s --check-prefix=JIT
+
+struct I {
+  var v;
+}
+
+struct O {
+  var n;
+  I j;
+}
+
+def main() {
+  O o = {1, {[2, 3]}};
+  print(o.n);
+  print(o.j.v);
+}
+
+# MLIR: toy.struct_constant [dense<1.000000e+00> : tensor<f64>, [dense<[2.000000e+00, 3.000000e+00]> : tensor<2xf64>]] : !toy.struct<tensor<*xf64>, !toy.struct<tensor<*xf64>>>
+
+# A rank-0 print has no newline, so both prints land on one line.
+# JIT: 1.000000 2.000000 3.000000

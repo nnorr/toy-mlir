@@ -1,0 +1,39 @@
+# Where the driver writes, and how it fails to.
+#
+# With -c and no -o the object is named after the input's stem, in the current
+# directory; from stdin it is a.o.
+# RUN: rm -rf %t.dir && mkdir -p %t.dir
+# RUN: cd %t.dir && %toyc %s -c
+# RUN: %readelf -h %t.dir/output-files.o | %filecheck %s --check-prefix=OBJ
+# RUN: cd %t.dir && %toyc - -c < %s
+# RUN: %readelf -h %t.dir/a.o | %filecheck %s --check-prefix=OBJ
+#
+# Text output goes to the -o file instead of stderr, with a trailing newline.
+# RUN: %toyc %s -emit=mlir -o %t.mlir 2>&1 | %filecheck %s --allow-empty --check-prefix=QUIET
+# RUN: %filecheck %s --check-prefix=MLIR < %t.mlir
+#
+# Paths that cannot be written, for each kind of output.
+# RUN: not %toyc %s -c -o %t.no-such-dir/x.o 2>&1 | %filecheck %s --check-prefix=BAD-OBJ
+# RUN: not %toyc %s -c --emit-llvm -o %t.no-such-dir/x.o 2>&1 | %filecheck %s --check-prefix=BAD-LL
+# RUN: not %toyc %s -emit=llvm -o %t.no-such-dir/x.ll 2>&1 | %filecheck %s --check-prefix=BAD-TEXT
+# RUN: not %toyc %s -emit=ast -o %t.no-such-dir/x.ast 2>&1 | %filecheck %s --check-prefix=BAD-TEXT
+#
+# Inputs and options the driver cannot act on.
+# RUN: not %toyc %s -c --target=bogus-unknown-none 2>&1 | %filecheck %s --check-prefix=TARGET
+# RUN: not %toyc %t.does-not-exist.mlir -emit=mlir 2>&1 | %filecheck %s --check-prefix=NO-MLIR
+# RUN: not %toyc %s 2>&1 | %filecheck %s --check-prefix=NO-ACTION
+
+def main() {
+  print([1, 2]);
+}
+
+# OBJ: Type: REL (Relocatable file)
+# QUIET-NOT: {{.}}
+# MLIR: toy.func @main()
+# MLIR: toy.print
+# BAD-OBJ: could not open {{.*}}x.o: No such file or directory
+# BAD-LL: Could not open output file: No such file or directory
+# BAD-TEXT: Could not open output file: No such file or directory
+# TARGET: Could not create TargetMachine: No available targets are compatible with triple "bogus-unknown-none"
+# NO-MLIR: Could not open input file
+# NO-ACTION: No action specified (parsing only?), use -emit=<action>

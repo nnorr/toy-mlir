@@ -1,0 +1,22 @@
+# Parentheses override precedence: `*` binds tighter than `+`, so the two
+# prints group differently and print different values. The parentheses leave
+# no node of their own in the AST.
+#
+# RUN: %toyc %s -emit=ast 2>&1 | %filecheck %s --check-prefix=AST
+# RUN: %toyc %s -emit=jit 2>&1 | %filecheck %s --check-prefix=JIT
+
+def main() {
+  print(([1, 2] + [3, 4]) * [5, 6]);
+  print([1, 2] + [3, 4] * [5, 6]);
+}
+
+# AST:      Print
+# AST-NEXT:   BinOp: *
+# AST-NEXT:     BinOp: +
+# AST:        Print
+# AST-NEXT:   BinOp: +
+# AST-NEXT:     Literal
+# AST-NEXT:     BinOp: *
+
+# A rank-1 print ends without a newline, so both results share one line.
+# JIT: 20.000000 36.000000 16.000000 26.000000
