@@ -24,32 +24,6 @@
 
 namespace toy {
 
-std::string getTokenName(int tok) {
-  switch (tok) {
-  case tok_eof:
-    return "eof";
-  case tok_return:
-    return "return";
-  case tok_var:
-    return "var";
-  case tok_def:
-    return "def";
-  case tok_struct:
-    return "struct";
-  case tok_identifier:
-    return "identifier";
-  case tok_number:
-    return "number";
-  default:
-    break;
-  }
-
-  // Everything else is a single-character token that kept its ASCII value.
-  if (tok >= 0 && isprint(tok))
-    return std::string(1, static_cast<char>(tok));
-  return "<unknown token " + std::to_string(tok) + ">";
-}
-
 Lexer::Lexer(llvm::StringRef buffer, std::string filename)
     : buffer(buffer),
       lastLocation({std::make_shared<std::string>(std::move(filename)), 0, 0}) {

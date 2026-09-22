@@ -68,9 +68,6 @@ enum Token : int {
   tok_number = -7,
 };
 
-/// Human-readable spelling of a token, for diagnostics.
-std::string getTokenName(int tok);
-
 /// Turns a buffer of Toy source into a token stream.
 ///
 /// The lexer owns a one-token lookahead (`curTok`) plus a one-character

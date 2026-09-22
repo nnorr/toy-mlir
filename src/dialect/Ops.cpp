@@ -329,6 +329,12 @@ void GenericCallOp::setCalleeFromCallable(CallInterfaceCallable callee) {
   (*this)->setAttr("callee", cast<SymbolRefAttr>(callee));
 }
 
+Operation::operand_range GenericCallOp::getArgOperands() { return getInputs(); }
+
+MutableOperandRange GenericCallOp::getArgOperandsMutable() {
+  return getInputsMutable();
+}
+
 /// The callee must be a toy.func taking as many arguments as are passed.
 /// Without this an arity mismatch surfaces after inlining as a shape inference
 /// failure that never mentions the call.
@@ -344,12 +350,6 @@ GenericCallOp::verifySymbolUses(SymbolTableCollection &symbolTable) {
                          << getCallee() << "', which takes "
                          << callee.getNumArguments();
   return mlir::success();
-}
-
-Operation::operand_range GenericCallOp::getArgOperands() { return getInputs(); }
-
-MutableOperandRange GenericCallOp::getArgOperandsMutable() {
-  return getInputsMutable();
 }
 
 //===----------------------------------------------------------------------===//

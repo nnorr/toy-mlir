@@ -210,10 +210,11 @@ private:
     std::vector<mlir::Type> elementTypes;
     elementTypes.reserve(variables.size());
     for (auto &variable : variables) {
-      if (variable->getInitVal())
-        return mlir::emitError(loc(variable->loc()))
-               << "error: variables within a struct definition must not have "
-                  "initializers";
+      // parseStruct parses members with requiresInitializer=false, which never
+      // reads an initializer: `var a = 1;` in a struct is a parse error.
+      assert(!variable->getInitVal() && "struct member with an initializer");
+      // The message is upstream's, wrong as it is: this is a shape, not an
+      // initializer. It is compared byte for byte against toyc-ch7.
       if (!variable->getType().shape.empty())
         return mlir::emitError(loc(variable->loc()))
                << "error: variables within a struct definition must not have "

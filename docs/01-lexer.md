@@ -1,6 +1,6 @@
 # 01. Lexer
 
-Files: `include/toy/Lexer.h`, `src/Lexer.cpp` (147 + 156 lines)
+Files: `include/toy/Lexer.h`, `src/Lexer.cpp` (144 + 130 lines)
 
 ## What it does
 
@@ -35,7 +35,7 @@ Toy has four keywords. There is no token for `+`, `*` or `.`, because those arri
 
 ## Two lookaheads
 
-The class holds two pieces of lookahead, and both are needed for different reasons (`include/toy/Lexer.h:137`):
+The class holds two pieces of lookahead, and both are needed for different reasons (`include/toy/Lexer.h:134`):
 
 ```c++
   Token curTok = tok_eof;      ///< Current token.
@@ -60,7 +60,7 @@ That assertion is load bearing in an unfortunate way upstream. See deviation D7 
 
 ## Line and column tracking
 
-`getNextChar()` maintains the position (`src/Lexer.cpp:58`):
+`getNextChar()` maintains the position (`src/Lexer.cpp:32`):
 
 ```c++
 int Lexer::getNextChar() {
@@ -83,7 +83,7 @@ int Lexer::getNextChar() {
 }
 ```
 
-`lexToken()` then records the position after skipping whitespace and before reading the token's characters (`src/Lexer.cpp:88`):
+`lexToken()` then records the position after skipping whitespace and before reading the token's characters (`src/Lexer.cpp:62`):
 
 ```c++
   while (lastChar != EOF && isspace(lastChar))
@@ -107,11 +107,11 @@ struct Location {
 
 ## Identifiers, keywords, comments
 
-Keyword recognition happens after an identifier has been lexed, by comparing the string (`src/Lexer.cpp:103`). There is no keyword table, and `return`, `def`, `struct` and `var` are the only four.
+Keyword recognition happens after an identifier has been lexed, by comparing the string (`src/Lexer.cpp:77`). There is no keyword table, and `return`, `def`, `struct` and `var` are the only four.
 
 An identifier is `[a-zA-Z][a-zA-Z0-9_]*`, so `_` is allowed after the first character. (Toy's own lexer permits this; the Kaleidoscope compiler in `06_llvm_tutorial` does not, which is worth knowing if you compare the two.)
 
-Comments run from `#` to the end of the line, and the lexer restarts itself rather than returning something (`src/Lexer.cpp:135`):
+Comments run from `#` to the end of the line, and the lexer restarts itself rather than returning something (`src/Lexer.cpp:109`):
 
 ```c++
   if (lastChar == '#') {
@@ -128,13 +128,13 @@ Comments run from `#` to the end of the line, and the lexer restarts itself rath
 
 The recursive call matters for locations. Restarting re-runs the whitespace skip and re-records `lastLocation`, so a token preceded by a comment still reports its own position.
 
-EOF is never consumed (`src/Lexer.cpp:147`). Every later call keeps returning `tok_eof`, which is what lets the parser's loops test for it repeatedly.
+EOF is never consumed (`src/Lexer.cpp:121`). Every later call keeps returning `tok_eof`, which is what lets the parser's loops test for it repeatedly.
 
 ## Deviation D1: malformed numbers are reported
 
 A Toy number is lexed as `[0-9]([0-9.])*`, which accepts text that is not a number. `strtod` then stops at the second `.`, so `1.23.45` silently becomes `1.23` and the rest disappears.
 
-This lexer counts the dots and reports the problem (`src/Lexer.cpp:115`):
+This lexer counts the dots and reports the problem (`src/Lexer.cpp:89`):
 
 ```c++
   if (isdigit(lastChar)) {
@@ -187,7 +187,7 @@ Upstream compiles the file successfully and silently uses `1.23`. The number lin
 
 Upstream splits the lexer in two: an abstract `Lexer` with a pure virtual `readNextLine()`, and a `LexerBuffer` subclass that serves one line at a time from a memory buffer. That indirection exists so a REPL could feed lines interactively, and Toy never grew one.
 
-This version is one concrete class over a `llvm::StringRef` (`include/toy/Lexer.h:80`). The virtual call and the line-at-a-time buffering are gone, and the class can be constructed directly in a unit test. `ARCHITECTURE.md` records the decision.
+This version is one concrete class over a `llvm::StringRef` (`include/toy/Lexer.h:77`). The virtual call and the line-at-a-time buffering are gone, and the class can be constructed directly in a unit test. `ARCHITECTURE.md` records the decision.
 
 Keeping the observable line and column numbers identical took some care, because upstream starts with `curLineNum = 0` and a fake `"\n"` line buffer whose newline increments the counter to 1, while this version starts at `curLineNum = 1` with the real input. The two schemes agree on every token position, which the differential sweep in `tests/compat` checks over all 40 upstream test inputs.
 

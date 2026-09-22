@@ -1,6 +1,6 @@
 # 04. MLIRGen
 
-Files: `include/toy/MLIRGen.h` (48), `src/MLIRGen.cpp` (693)
+Files: `include/toy/MLIRGen.h` (48), `src/MLIRGen.cpp` (694)
 
 ## What it does
 
@@ -77,7 +77,7 @@ Two more maps: `functionMap` records generated functions so a later call can fin
 
 ## Functions
 
-`mlirGenPrototype` builds the signature with no results (`src/MLIRGen.cpp:246`):
+`mlirGenPrototype` builds the signature with no results (`src/MLIRGen.cpp:247`):
 
 ```c++
     auto funcType = builder.getFunctionType(argTypes, /*results=*/{});
@@ -85,7 +85,7 @@ Two more maps: `functionMap` records generated functions so a later call can fin
                                      funcType);
 ```
 
-Parameters become block arguments of the entry block, and the names are bound to them (`src/MLIRGen.cpp:264`):
+Parameters become block arguments of the entry block, and the names are bound to them (`src/MLIRGen.cpp:265`):
 
 ```c++
     // Block arguments are the parameters' values; bind the names to them.
@@ -96,7 +96,7 @@ Parameters become block arguments of the entry block, and the names are bound to
     }
 ```
 
-After the body, three things happen (`src/MLIRGen.cpp:280`). A block must end in a terminator, so a missing `return` gets one. If the body did return a value, the signature is updated to match, which is the deferred result type arriving. And every function except `main` is marked private:
+After the body, three things happen (`src/MLIRGen.cpp:281`). A block must end in a terminator, so a missing `return` gets one. If the body did return a value, the signature is updated to match, which is the deferred result type arriving. And every function except `main` is marked private:
 
 ```c++
     // Private visibility is what allows the inliner to delete a callee once it
@@ -113,19 +113,19 @@ $ build/bin/toyc docs/examples/ex.toy -emit=mlir 2>&1 | sed -n '2p'
   toy.func private @multiply_transpose(%arg0: tensor<*xf64>, %arg1: tensor<*xf64>) -> tensor<*xf64> {
 ```
 
-On failure the half-built function is erased (`src/MLIRGen.cpp:273`), because leaving it in the module would fail verification with a confusing second error.
+On failure the half-built function is erased (`src/MLIRGen.cpp:274`), because leaving it in the module would fail verification with a confusing second error.
 
 ## Statements versus expressions
 
-`mlirGenBlock` handles declarations, `return` and `print` itself (`src/MLIRGen.cpp:314`), because each carries a rule that only applies at statement level: a declaration adds to this scope, a return ends the block, and a print produces no value.
+`mlirGenBlock` handles declarations, `return` and `print` itself (`src/MLIRGen.cpp:315`), because each carries a rule that only applies at statement level: a declaration adds to this scope, a return ends the block, and a print produces no value.
 
-`mlirGenExpr` guards the other direction (`src/MLIRGen.cpp:344`). The parser can place a `print` inside an expression, so the expression context rejects the three statement kinds. Upstream did that in its dispatch switch's `default:` case; since the visitor has a hook for every kind, the check moved to the one place that knows the context.
+`mlirGenExpr` guards the other direction (`src/MLIRGen.cpp:345`). The parser can place a `print` inside an expression, so the expression context rejects the three statement kinds. Upstream did that in its dispatch switch's `default:` case; since the visitor has a hook for every kind, the check moved to the one place that knows the context.
 
 ## What each node becomes
 
-A number is a rank-0 constant. A tensor literal is one constant holding the flattened data, built by `getConstantAttr` plus `collectData` (`src/MLIRGen.cpp:435`, `:485`). The data becomes an attribute rather than operands because it is known at compile time.
+A number is a rank-0 constant. A tensor literal is one constant holding the flattened data, built by `getConstantAttr` plus `collectData` (`src/MLIRGen.cpp:436`, `:485`). The data becomes an attribute rather than operands because it is known at compile time.
 
-A declaration with an explicit shape emits a reshape (`src/MLIRGen.cpp:526`):
+A declaration with an explicit shape emits a reshape (`src/MLIRGen.cpp:527`):
 
 ```c++
     } else if (!varType.shape.empty()) {
@@ -137,9 +137,9 @@ A declaration with an explicit shape emits a reshape (`src/MLIRGen.cpp:526`):
 
 This is why `var a<2, 3> = [[1, 2, 3], [4, 5, 6]];` produces a `toy.reshape` from `tensor<2x3xf64>` to `tensor<2x3xf64>`, a no-op that the canonicalizer removes later ([06-patterns-and-folding.md](06-patterns-and-folding.md)).
 
-`transpose` is a builtin with its own operation; any other callee becomes a `generic_call` whose result type is the callee's declared result, still unranked at this point (`src/MLIRGen.cpp:657`).
+`transpose` is a builtin with its own operation; any other callee becomes a `generic_call` whose result type is the callee's declared result, still unranked at this point (`src/MLIRGen.cpp:658`).
 
-The `.` operator is resolved at compile time. `getStructFor` recovers which struct a sub-expression evaluates to, walking through nested accesses, and `getMemberIndex` turns the member name into a position in the definition (`src/MLIRGen.cpp:367`, `:407`). Toy has no type checker, so this recovery from declarations is the closest thing to one.
+The `.` operator is resolved at compile time. `getStructFor` recovers which struct a sub-expression evaluates to, walking through nested accesses, and `getMemberIndex` turns the member name into a position in the definition (`src/MLIRGen.cpp:368`, `:407`). Toy has no type checker, so this recovery from declarations is the closest thing to one.
 
 ## Verification before handing off
 
@@ -187,9 +187,9 @@ $ ~/dev/08_mlir_toy/build/bin/toyc-ch7 docs/examples/unk.toy -emit=mlir 2>&1 | h
 loc("docs/examples/unk.toy":3:9): error: error: unknown variable 'nope'
 ```
 
-Those strings are compared against `toyc-ch7` byte for byte by `tests/compat`, so they keep the doubled prefix here too (`src/MLIRGen.cpp:585` and elsewhere). D4's message is ours, so it is not doubled. The comment at `src/MLIRGen.cpp:160` records the reasoning, so that a later reader does not "fix" one and break the sweep.
+Those strings are compared against `toyc-ch7` byte for byte by `tests/compat`, so they keep the doubled prefix here too (`src/MLIRGen.cpp:586` and elsewhere). D4's message is ours, so it is not doubled. The comment at `src/MLIRGen.cpp:160` records the reasoning, so that a later reader does not "fix" one and break the sweep.
 
-Upstream also returns success from the block walk when a `print` fails to generate, so its driver exits 0 after printing a diagnostic. Here the failure propagates (deviation D12, `src/MLIRGen.cpp:326`).
+Upstream also returns success from the block walk when a `print` fails to generate, so its driver exits 0 after printing a diagnostic. Here the failure propagates (deviation D12, `src/MLIRGen.cpp:327`).
 
 A call is an expression, so its callee must return a value. Upstream reads the result type of a function that returns nothing by indexing an empty list, and aborts. Here that is a diagnostic (deviation D13):
 
@@ -237,4 +237,4 @@ The callee is gone, the two reshapes are gone, the call is gone, every type is r
 
 `functionMap` is consulted for the callee's result type, so calling a function defined later in the file fails with `no defined function found`. Toy has no forward declarations.
 
-The struct type is compared by identity in a struct-typed declaration (`src/MLIRGen.cpp:519`). Since MLIR types are uniqued, two structurally identical structs are the same type, and two structs with different element types can never be assigned to each other.
+The struct type is compared by identity in a struct-typed declaration (`src/MLIRGen.cpp:520`). Since MLIR types are uniqued, two structurally identical structs are the same type, and two structs with different element types can never be assigned to each other.

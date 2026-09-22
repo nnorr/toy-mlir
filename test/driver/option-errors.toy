@@ -1,0 +1,22 @@
+# Option combinations the driver rejects before reading the input, each with
+# the reason. None of these reach the compiler proper.
+#
+# RUN: not %toyc %s -c -emit=mlir 2>&1 | %filecheck %s --check-prefix=C-EMIT
+# RUN: not %toyc %s -emit=mlir --dump-ast-style=toy 2>&1 | %filecheck %s --check-prefix=AST-STYLE
+# RUN: not %toyc %s -emit=llvm --emit-llvm 2>&1 | %filecheck %s --check-prefix=EMIT-LLVM
+# RUN: not %toyc %s -emit=mlir -g 2>&1 | %filecheck %s --check-prefix=DEBUG
+# RUN: not %toyc %s -emit=llvm --target=x86_64-unknown-linux-gnu 2>&1 | %filecheck %s --check-prefix=TARGET
+#
+# An output file that cannot be opened is reported, not written to stderr.
+# RUN: not %toyc %s -emit=mlir -o %t.no-such-dir/out.mlir 2>&1 | %filecheck %s --check-prefix=OUTPUT
+
+def main() {
+  print(1);
+}
+
+# C-EMIT: -c cannot be combined with -emit=mlir
+# AST-STYLE: --dump-ast-style only applies to -emit=ast
+# EMIT-LLVM: --emit-llvm only applies with -c
+# DEBUG: -g has no effect before the LLVM dialect
+# TARGET: --target=/-mattr=/-mabi= only apply with -c
+# OUTPUT: Could not open output file

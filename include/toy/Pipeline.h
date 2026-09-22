@@ -23,8 +23,6 @@
 
 #include "mlir/Support/LLVM.h"
 
-#include "llvm/ADT/StringRef.h"
-
 namespace mlir {
 class PassManager;
 } // namespace mlir
@@ -42,9 +40,6 @@ enum class Stage {
   Object,     ///< A native .o, via TargetMachine.
   JIT,        ///< Compiled and run in this process.
 };
-
-/// The name accepted on the command line for a stage ("mlir-affine", "jit").
-llvm::StringRef getStageName(Stage stage);
 
 struct PipelineOptions {
   Stage stage = Stage::MLIR;

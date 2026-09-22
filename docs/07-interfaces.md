@@ -178,7 +178,7 @@ does nothing: nothing crashes and nothing is reported, which is what makes the
 failure hard to place.
 
 `toy.generic_call` becomes visible to the inliner through four
-`CallOpInterface` methods (`src/dialect/Ops.cpp:324-321`):
+`CallOpInterface` methods (`src/dialect/Ops.cpp:324-336`):
 
 ```c++
 CallInterfaceCallable GenericCallOp::getCallableForCallee() {
@@ -194,7 +194,7 @@ MutableOperandRange GenericCallOp::getArgOperandsMutable() {
 ```
 
 The callable side is `FuncOp::getCallableRegion()`, declared inline in
-`include/toy/Ops.td:215-216`. Returning the body is what makes the operation
+`include/toy/Ops.td:215-218`. Returning the body is what makes the operation
 callable at all.
 
 ## The pass

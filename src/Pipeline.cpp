@@ -20,29 +20,7 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/Passes.h"
 
-#include "llvm/Support/ErrorHandling.h"
-
 namespace toy {
-
-llvm::StringRef getStageName(Stage stage) {
-  switch (stage) {
-  case Stage::AST:
-    return "ast";
-  case Stage::MLIR:
-    return "mlir";
-  case Stage::MLIRAffine:
-    return "mlir-affine";
-  case Stage::MLIRLLVM:
-    return "mlir-llvm";
-  case Stage::LLVMIR:
-    return "llvm";
-  case Stage::Object:
-    return "obj";
-  case Stage::JIT:
-    return "jit";
-  }
-  llvm_unreachable("unknown Stage");
-}
 
 mlir::LogicalResult buildPipeline(mlir::PassManager &pm,
                                   const PipelineOptions &opts) {

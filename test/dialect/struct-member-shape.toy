@@ -1,0 +1,16 @@
+# A struct member with a declared shape is rejected. Members are always
+# tensor<*xf64>; their shapes come from the struct literal.
+#
+# RUN: not %toyc %s -emit=mlir 2>&1 | %filecheck %s
+
+struct S {
+  var a<2>;
+}
+
+def main() {
+  print([1]);
+}
+
+# The message says "initializers" although the problem is a shape. That wording
+# is upstream's and is compared byte for byte against toyc-ch7.
+# CHECK: loc("{{.*}}struct-member-shape.toy":7:3): error: error: variables within a struct definition must not have initializers

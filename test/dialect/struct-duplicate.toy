@@ -1,0 +1,17 @@
+# Two structs with one name. The second definition is the one reported.
+#
+# RUN: not %toyc %s -emit=mlir 2>&1 | %filecheck %s
+
+struct S {
+  var a;
+}
+
+struct S {
+  var b;
+}
+
+def main() {
+  print([1]);
+}
+
+# CHECK: loc("{{.*}}struct-duplicate.toy":9:1): error: error: struct type with name `S' already exists

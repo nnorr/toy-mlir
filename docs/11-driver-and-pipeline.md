@@ -1,6 +1,6 @@
 # 11. The driver and the pipeline
 
-Files: `src/main.cpp`, `src/Pipeline.cpp` (115 lines),
+Files: `src/main.cpp`, `src/Pipeline.cpp` (92 lines),
 `include/toy/Pipeline.h`.
 
 ## What this is for
@@ -67,7 +67,7 @@ and the ones this driver adds:
 | 9 | object emission failed |
 | 10 | the output file could not be opened |
 
-`validateOptions` (`src/main.cpp:276-307`) is what produces code 7. It rejects
+`validateOptions` (`src/main.cpp:274-305`) is what produces code 7. It rejects
 combinations that cannot mean anything, rather than letting one side be silently
 ignored: `-c` with `-emit=mlir`, `--dump-ast-style` without `-emit=ast`,
 `--emit-llvm` without `-c`, `-g` before the LLVM stage, `--target=` without `-c`.
@@ -94,10 +94,10 @@ const bool isLoweringToAffine = opts.stage >= Stage::MLIRAffine;
 const bool isLoweringToLLVM = opts.stage >= Stage::MLIRLLVM;
 ```
 
-`src/Pipeline.cpp:52-53`. Asking for an object file or the JIT runs the affine
+`src/Pipeline.cpp:30-31`. Asking for an object file or the JIT runs the affine
 lowering too, because `Object` and `JIT` sort above `MLIRLLVM`. Upstream does the
-same thing with its `Action` enum; naming the enum `Stage` and giving it a
-`getStageName` (`:27-45`) is the only difference.
+same thing with its `Action` enum; naming the enum `Stage` is the only
+difference.
 
 ## The pass order
 
@@ -134,25 +134,25 @@ if (isLoweringToLLVM) {
 }
 ```
 
-`src/Pipeline.cpp:58-109`. Five things to notice.
+`src/Pipeline.cpp:36-87`. Five things to notice.
 
-Lowering implies the Toy-level work (`:58`). The condition is
+Lowering implies the Toy-level work (`:36`). The condition is
 `enableOpt || isLoweringToAffine` rather than `enableOpt` alone, because the
 lowering patterns need static shapes, and shapes only become static after inlining
 and inference. You cannot lower an unoptimized Toy program.
 
-Inlining is first, and at module scope (`:62`). It is what makes everything after
+Inlining is first, and at module scope (`:40`). It is what makes everything after
 it intraprocedural: one function with known argument types instead of N generic
 ones.
 
-Canonicalize runs before inference (`:70`), so reshape folding has already removed
+Canonicalize runs before inference (`:48`), so reshape folding has already removed
 operations whose shapes would otherwise need inferring.
 
-CSE at `:75` collapses the tutorial's two identical transposes into the single
+CSE at `:53` collapses the tutorial's two identical transposes into the single
 `mul %1, %1` the documentation shows. Without it the IR is correct but does not
 match the published output.
 
-Anchors change after the affine lowering (`:83`). The first nest is on
+Anchors change after the affine lowering (`:61`). The first nest is on
 `toy::FuncOp`, the second on `func::FuncOp`, because `toy.func` no longer exists by
 then.
 
@@ -171,7 +171,7 @@ outside would have to be processed serially.
 
 ### Debug info, and byte-identity
 
-`:99-108` is the one place the pipeline deviates. Upstream always appends
+`:77-86` is the one place the pipeline deviates. Upstream always appends
 `DIScopeForLLVMFuncOpPass`, so that is what runs without `-g`, which keeps
 `-emit=mlir-llvm` byte-identical to upstream's. With `-g`, our own pass takes its
 place. See [12](12-debug-info-and-objects.md).

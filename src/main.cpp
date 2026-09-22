@@ -250,8 +250,6 @@ static Stage selectStage() {
 }
 
 /// The spelling of an -emit action, for diagnostics about the option itself.
-/// Not getStageName(): with -c the stage is already Object, which is not what
-/// the user typed.
 static llvm::StringRef getActionName(Action action) {
   switch (action) {
   case None:

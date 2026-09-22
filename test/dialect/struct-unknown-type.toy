@@ -1,0 +1,11 @@
+# A declaration naming a struct that was never defined.
+#
+# RUN: not %toyc %s -emit=mlir 2>&1 | %filecheck %s
+
+def main() {
+  Foo x = {[1]};
+  print(x.a);
+}
+
+# The doubled "error: error:" is upstream's, kept for byte compatibility.
+# CHECK: loc("{{.*}}struct-unknown-type.toy":6:3): error: error: unknown struct type 'Foo'
