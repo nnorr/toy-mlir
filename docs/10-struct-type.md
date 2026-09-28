@@ -11,6 +11,11 @@ type needs. Keep the payoff in view while reading: adding this type to the
 language required no change to the lowering pipeline at all, and the last section
 verifies that.
 
+`docs/examples/dumps/struct.mlir.opt.diff` is that payoff in one file. Five
+mentions of `!toy.struct` in the unoptimized dump, none in the optimized one, and
+the affine and LLVM dumps beside it are what any struct-free program would
+produce.
+
 ## A Type is a handle, not an object
 
 `src/dialect/StructType.cpp:12-17` puts it plainly. `StructType` is two words

@@ -208,6 +208,11 @@ value would mean a function other than `main` survived.
 
 ## Try it
 
+The excerpts here are abridged to keep the interesting lines together. For the
+whole level unabridged, `docs/examples/dumps/ex.mlir-affine.txt` is this stage in
+full, and `ex.mlir-affine.opt.diff` is what loop fusion and scalar replacement
+change.
+
 The `// the transpose` and `// the multiply` comments below are added here to mark
 which loop nest is which; `toyc` does not print them. Everything else is its real
 output, abridged only where a line says `...`.
