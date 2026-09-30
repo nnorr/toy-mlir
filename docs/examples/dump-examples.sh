@@ -9,15 +9,18 @@
 # a pass shows up as a failing test instead of as documentation that quietly
 # stopped being true.
 #
-# Levels stop at the LLVM dialect on purpose. -emit=llvm is past the translation
-# out of MLIR, so it belongs to LLVM's own code generation rather than to this
-# compiler's abstraction levels, and docs/09-lowering-to-llvm.md covers it.
+# Beyond the levels, the primary program also gets the views that explain how the
+# pipeline works rather than what it produced: the generic form beside the pretty
+# one, locations, the pass pipeline as a string, the IR after every pass, pass
+# statistics, and the symbols of a real object file.
 #
-# Every dump here is independent of the working directory and of the absolute
-# path of the input: MLIR does not print locations unless asked, and the debug
-# metadata that does embed a filename only appears after translation, at a level
-# this script does not capture. That is what makes the committed files stable
-# enough to diff in CI.
+# Stability is the constraint on everything here, since every file is compared
+# byte for byte. Dumps are produced from the repo root with relative input paths,
+# so no absolute path reaches a dump; nothing timed is captured, which is why
+# `ctest` output appears nowhere; and the object file itself is thrown away
+# because only its symbol table is worth reading. The `llvm` and `mlir-llvm`
+# levels embed LLVM's own spelling and its debug metadata numbering: stable on
+# one machine, and expected to move when LLVM is upgraded.
 #
 # Usage:
 #   docs/examples/dump-examples.sh              regenerate in place
@@ -29,6 +32,8 @@ set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 toyc=${TOYC:-$root/build/bin/toyc}
+# Only needed for the optional scf/cf section, which is skipped without it.
+mlir_opt=${MLIR_OPT:-$HOME/dev/08_mlir_toy/build/bin/mlir-opt}
 check=0
 [[ ${1:-} == --check ]] && check=1
 
@@ -37,44 +42,140 @@ if [[ ! -x $toyc ]]; then
   exit 2
 fi
 
-# Each program earns its place by showing something the others do not.
-programs=(ex struct transpose)
+# Each program earns its place by showing something the others do not. `codegen`
+# is upstream's own running example and is read from reference/ rather than
+# copied, so its source locations match the tutorial's exactly.
+programs=(codegen ex struct transpose trivial_reshape)
+src_codegen=reference/tests/Ch2/codegen.toy
+src_ex=docs/examples/ex.toy
+src_struct=docs/examples/struct.toy
+src_transpose=docs/examples/transpose.toy
+src_trivial_reshape=reference/tests/Ch3/trivial_reshape.toy
+
+# The program the documents cite when they need one.
+primary=codegen
 
 # -opt changes nothing in the AST, so that level is captured once.
-levels_both=(mlir mlir-affine mlir-llvm)
+levels_both=(mlir mlir-affine mlir-llvm llvm)
 
 dumps=$root/docs/examples/dumps
 out=$dumps
+scratch=$root/build/dump-scratch
 if (( check )); then
   out=$(mktemp -d)
-  trap 'rm -rf "$out"' EXIT
+  trap 'rm -rf "$out" "$scratch"' EXIT
+else
+  trap 'rm -rf "$scratch"' EXIT
 fi
-mkdir -p "$out"
+mkdir -p "$out" "$scratch"
 
 # Relative paths, run from the repo root, so nothing absolute reaches a dump.
 cd "$root"
 
+# A unified diff header would otherwise carry a temporary path and a timestamp,
+# so both sides are labelled and the file compares equal on every run.
+emit_diff() { # left right label_left label_right target
+  diff -u --label "$3" --label "$4" "$1" "$2" > "$5" || true
+}
+
 for prog in "${programs[@]}"; do
-  src=docs/examples/$prog.toy
+  eval "src=\$src_$prog"
 
   "$toyc" "$src" -emit=ast > "$out/$prog.ast.txt" 2>&1
 
   for level in "${levels_both[@]}"; do
     "$toyc" "$src" -emit="$level"      > "$out/$prog.$level.txt"     2>&1
     "$toyc" "$src" -emit="$level" -opt > "$out/$prog.$level.opt.txt" 2>&1
-
-    # Labels rather than filenames: a unified diff header would otherwise carry
-    # a temporary path and a timestamp, and the file would never compare equal.
-    diff -u --label "$prog.$level.txt (no -opt)" \
-            --label "$prog.$level.opt.txt (-opt)" \
-            "$out/$prog.$level.txt" "$out/$prog.$level.opt.txt" \
-      > "$out/$prog.$level.opt.diff" || true
+    emit_diff "$out/$prog.$level.txt" "$out/$prog.$level.opt.txt" \
+              "$prog.$level.txt (no -opt)" "$prog.$level.opt.txt (-opt)" \
+              "$out/$prog.$level.opt.diff"
   done
+
+  # What the program prints when it is actually run, which is the only dump here
+  # that is an answer rather than a representation.
+  "$toyc" "$src" -emit=jit -opt > "$out/$prog.jit.txt" 2>&1
 done
 
+#===----------------------------------------------------------------------===#
+# Views of the primary program
+#===----------------------------------------------------------------------===#
+
+eval "src=\$src_$primary"
+
+# The pretty format is sugar that ODS defines per operation; the generic form is
+# the structure every MLIR tool actually sees. The diff is the argument.
+"$toyc" "$src" -emit=mlir -opt --mlir-print-op-generic \
+  > "$out/$primary.generic.txt" 2>&1
+emit_diff "$out/$primary.mlir.opt.txt" "$out/$primary.generic.txt" \
+          "$primary.mlir.opt.txt (custom format)" \
+          "$primary.generic.txt (generic format)" \
+          "$out/$primary.generic.diff"
+
+# Locations ride on every operation from MLIRGen onward. They are not printed
+# unless asked, which is why every other dump here is path-independent.
+"$toyc" "$src" -emit=mlir --mlir-print-debuginfo \
+  > "$out/$primary.locations.txt" 2>&1
+
+# The same driver builds three different pipelines depending on how far it is
+# asked to go. Printed as a string, without compiling anything.
+for stage in mlir mlir-affine mlir-llvm; do
+  "$toyc" "$src" -emit="$stage" -opt --print-pipeline \
+    > "$out/$primary.pipeline.$stage.txt" 2>&1
+done
+
+# The most useful dump in the set: the IR after every pass, kept whole. Read it
+# with docs/examples/dumps/README.md, which says what each banner changed.
+"$toyc" "$src" -emit=mlir-affine -opt --mlir-print-ir-after-all \
+  > "$out/$primary.after-each-pass.mlir" 2>&1
+
+# Counters only, no timings, so this one is safe to commit.
+"$toyc" "$src" -emit=mlir-affine -opt --mlir-pass-statistics \
+  > "$out/$primary.pass-statistics.txt" 2>&1
+
+# The object file proves the lowering reaches a linkable artifact; its symbol
+# table is the part worth reading, so the object itself is discarded.
+"$toyc" "$src" -c -o "$scratch/$primary.o" > "$scratch/c.log" 2>&1
+nm -g "$scratch/$primary.o" > "$out/$primary.object-symbols.txt"
+
+#===----------------------------------------------------------------------===#
+# Optional: the scf and cf steps that the full conversion hides
+#===----------------------------------------------------------------------===#
+# toyc goes from affine to the LLVM dialect in one pass, but the conversion runs
+# through scf and cf on the way. Driving mlir-opt by hand is the only way to see
+# those intermediate forms. Needs the MLIR tools, so it is skipped when they are
+# absent, the way the differential sweep skips without toyc-ch7.
+
+scf_files=("$primary.affine-generic.mlir" "$primary.scf-from-affine.mlir"
+           "$primary.cf-from-scf.mlir")
+skipped_scf=0
+if [[ -x $mlir_opt ]]; then
+  # Generic form, because mlir-opt has never heard of the toy dialect and parses
+  # toy.print only as an unregistered operation.
+  "$toyc" "$src" -emit=mlir-affine -opt --mlir-print-op-generic \
+    > "$out/$primary.affine-generic.mlir" 2>&1
+  "$mlir_opt" --allow-unregistered-dialect --lower-affine \
+    "$out/$primary.affine-generic.mlir" \
+    > "$out/$primary.scf-from-affine.mlir" 2>&1
+  "$mlir_opt" --allow-unregistered-dialect --convert-scf-to-cf \
+    "$out/$primary.scf-from-affine.mlir" \
+    > "$out/$primary.cf-from-scf.mlir" 2>&1
+else
+  skipped_scf=1
+fi
+
+#===----------------------------------------------------------------------===#
+
 if (( check )); then
-  if diff -r -q "$dumps" "$out" --exclude=README.md; then
-    echo "dumps: up to date"
+  excludes=(--exclude=README.md)
+  if (( skipped_scf )); then
+    for f in "${scf_files[@]}"; do excludes+=("--exclude=$f"); done
+  fi
+  if diff -r -q "${excludes[@]}" "$dumps" "$out"; then
+    if (( skipped_scf )); then
+      echo "dumps: up to date (scf/cf section not compared: no mlir-opt)"
+    else
+      echo "dumps: up to date"
+    fi
   else
     echo
     echo "dumps: out of date. Regenerate with:" >&2
@@ -82,6 +183,12 @@ if (( check )); then
     exit 1
   fi
 else
-  printf 'dumps: wrote %d files to docs/examples/dumps/\n' \
-    "$(find "$out" -type f -not -name README.md | wc -l)"
+  printf 'dumps: wrote %d files to docs/examples/dumps/ (%s)\n' \
+    "$(find "$out" -type f -not -name README.md | wc -l)" \
+    "$(du -sh "$out" | cut -f1)"
+  # An `if` rather than `&&`: as the script's last statement, a false (( )) would
+  # become the exit status and fail the ctest entry on a successful run.
+  if (( skipped_scf )); then
+    echo "dumps: skipped the scf/cf section, no mlir-opt at $mlir_opt"
+  fi
 fi
