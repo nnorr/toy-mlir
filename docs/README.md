@@ -28,17 +28,12 @@ upstream source for each chapter is under `reference/Ch1` through
 | [13. Testing and equivalence](13-testing-and-equivalence.md) | `test/`, `tests/`, `tests/compat/` | none |
 | [14. What changed from upstream](14-upstream-diff.md) | every file, against `reference/Ch7` | none |
 
-## Two diagrams
+## Why the design is what it is
 
-Both are standalone HTML: open the file, no server and no network. They pan and
-zoom, switch between light and dark, trace a relationship, and export to PNG or
-SVG. Each is generated from the `.json` beside it, so the picture and its source
-travel together.
-
-| Diagram | Shows |
-| --- | --- |
-| [architecture.html](architecture.html) | The four libraries and which way they link, with the toolchain and the equivalence gate around them. Its boxes link to the files they stand for. |
-| [pipeline.html](pipeline.html) | One Toy program from source to a running process, annotated with the `-emit` flag that stops at each level and the file that performs each step. |
+[`adr/`](adr/README.md) holds fifteen decision records. The walkthroughs above
+explain how the code works and `../ARCHITECTURE.md` explains what the design is;
+the records explain what else was considered and what each choice cost. Several
+were forced by a compile or link error rather than chosen, and those records say so.
 
 ## The same program at every level
 
