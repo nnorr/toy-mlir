@@ -10,11 +10,6 @@ The language is the tutorial's, unchanged, and the output is checked against
 [`docs/`](docs/README.md), and the upstream tutorial is vendored under
 `reference/` so the two can be diffed.
 
-Two standalone HTML diagrams open with no server and no network:
-[docs/architecture.html](docs/architecture.html) for the libraries and which way
-they link, [docs/pipeline.html](docs/pipeline.html) for one program travelling
-from source to a running process.
-
 ## Requirements
 
 * LLVM and MLIR 24.0.0, built or installed with the ExecutionEngine enabled
@@ -135,7 +130,7 @@ MLIR's own options are registered too, so `--mlir-print-ir-after-all`,
 ## Test
 
 ```bash
-ninja -C build && ctest --test-dir build        # 8/8, about 12 s
+ninja -C build && ctest --test-dir build        # 9/9, about 17 s
 ```
 
 | Suite | What it covers |
@@ -145,8 +140,9 @@ ninja -C build && ctest --test-dir build        # 8/8, about 12 s
 | `jit_transpose`, `jit_transpose_opt` | compile and run a program, match its printed values |
 | `error_redeclaration` | an error path, so a driver that stops reporting failures cannot pass |
 | `docs` | runs every command quoted in the markdown and diffs its real output |
+| `dumps` | regenerates the IR dumps in `docs/examples/dumps/` and compares them |
 | `compat` | the differential sweep against `toyc-ch7`; this is the acceptance gate |
-| `compat_fixtures` | the four error paths where this repo deliberately differs |
+| `compat_fixtures` | 10 fixtures, 20 recorded diffs, for the error paths where this repo deliberately differs |
 
 Individual suites:
 

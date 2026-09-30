@@ -1,0 +1,36 @@
+  Module:
+    Function 
+      Proto 'multiply_transpose' @reference/tests/Ch2/codegen.toy:4:1
+      Params: [a, b]
+      Block {
+        Return
+          BinOp: * @reference/tests/Ch2/codegen.toy:5:23
+            Call 'transpose' [ @reference/tests/Ch2/codegen.toy:5:10
+              var: a @reference/tests/Ch2/codegen.toy:5:20
+            ]
+            Call 'transpose' [ @reference/tests/Ch2/codegen.toy:5:25
+              var: b @reference/tests/Ch2/codegen.toy:5:35
+            ]
+      } // Block
+    Function 
+      Proto 'main' @reference/tests/Ch2/codegen.toy:8:1
+      Params: []
+      Block {
+        VarDecl a<2, 3> @reference/tests/Ch2/codegen.toy:9:3
+          Literal: <2, 3>[ <3>[ 1.000000e+00, 2.000000e+00, 3.000000e+00], <3>[ 4.000000e+00, 5.000000e+00, 6.000000e+00]] @reference/tests/Ch2/codegen.toy:9:17
+        VarDecl b<2, 3> @reference/tests/Ch2/codegen.toy:10:3
+          Literal: <6>[ 1.000000e+00, 2.000000e+00, 3.000000e+00, 4.000000e+00, 5.000000e+00, 6.000000e+00] @reference/tests/Ch2/codegen.toy:10:17
+        VarDecl c<> @reference/tests/Ch2/codegen.toy:11:3
+          Call 'multiply_transpose' [ @reference/tests/Ch2/codegen.toy:11:11
+            var: a @reference/tests/Ch2/codegen.toy:11:30
+            var: b @reference/tests/Ch2/codegen.toy:11:33
+          ]
+        VarDecl d<> @reference/tests/Ch2/codegen.toy:12:3
+          Call 'multiply_transpose' [ @reference/tests/Ch2/codegen.toy:12:11
+            var: b @reference/tests/Ch2/codegen.toy:12:30
+            var: a @reference/tests/Ch2/codegen.toy:12:33
+          ]
+        Print [ @reference/tests/Ch2/codegen.toy:13:3
+          var: d @reference/tests/Ch2/codegen.toy:13:9
+        ]
+      } // Block

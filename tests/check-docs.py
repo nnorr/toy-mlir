@@ -19,6 +19,13 @@ snippet, a quote of upstream under reference/, and generated code under build/
 are left alone. Lines are matched individually rather than as a block, since an
 excerpt legitimately skips lines, reindents, and stops mid-function.
 
+That last property is also the check's blind spot, and it is worth knowing before
+trusting a green run: matching line by line detects a quoted line that no longer
+exists, and cannot detect a line the document left out. A block that quotes six
+of seven calls in a sequence passes. Omissions have to be caught by reading the
+source beside the document, which is how the missing
+populateAssertToLLVMConversionPattern line in rewrite-vs-conversion.md was found.
+
 Usage:
     tests/check-docs.py [options] [FILE ...]
 

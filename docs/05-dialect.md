@@ -2,7 +2,9 @@
 
 Files: `include/toy/Ops.td` (498), `include/toy/Dialect.h` (94), `src/dialect/ToyDialect.cpp` (79), `src/dialect/Ops.cpp` (501), `src/dialect/StructType.cpp` (183), `src/dialect/Interfaces.cpp` (131), and the generated `build/include/toy/*.inc` (about 6,500 lines)
 
-This is the document to read first if you want to understand MLIR rather than Toy.
+This is where MLIR stops being a framework you read about and becomes code you
+own. It assumes you can already read an operation and know what a region is; if
+not, [00. MLIR basics](00-mlir-basics.md) covers that first.
 
 ## What a dialect is
 
