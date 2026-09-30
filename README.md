@@ -10,11 +10,6 @@ The language is the tutorial's, unchanged, and the output is checked against
 [`docs/`](docs/README.md), and the upstream tutorial is vendored under
 `reference/` so the two can be diffed.
 
-Two standalone HTML diagrams open with no server and no network:
-[docs/architecture.html](docs/architecture.html) for the libraries and which way
-they link, [docs/pipeline.html](docs/pipeline.html) for one program travelling
-from source to a running process.
-
 ## Requirements
 
 * LLVM and MLIR 24.0.0, built or installed with the ExecutionEngine enabled
