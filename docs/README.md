@@ -25,6 +25,7 @@ upstream source for each chapter is under `reference/Ch1` through
 | [11. Driver and pipeline](11-driver-and-pipeline.md) | `Pipeline.{h,cpp}`, `main.cpp` | Ch6's `toyc.cpp`, reorganized |
 | [12. Debug info and object files](12-debug-info-and-objects.md) | `DebugInfo.{h,cpp}`, `ObjectEmitter.{h,cpp}`, `Translate.{h,cpp}`, `Jit.{h,cpp}` | past Ch7 |
 | [13. Testing and equivalence](13-testing-and-equivalence.md) | `test/`, `tests/`, `tests/compat/` | none |
+| [14. What changed from upstream](14-upstream-diff.md) | every file, against `reference/Ch7` | none |
 
 ## Two diagrams
 
@@ -48,3 +49,7 @@ first, then jump to 05.
 
 For the parts that have no upstream equivalent, read 11 and 12 for the driver and
 the back end, and 13 for how the repo proves it matches `toyc-ch7`.
+
+Reviewers and anyone who knows the tutorial already may prefer to start at 14,
+which measures every file against `reference/Ch7` and says what moved, what was
+written here, and which upstream bugs were fixed rather than inherited.
