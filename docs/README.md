@@ -38,6 +38,13 @@ travel together.
 | [architecture.html](architecture.html) | The four libraries and which way they link, with the toolchain and the equivalence gate around them. Its boxes link to the files they stand for. |
 | [pipeline.html](pipeline.html) | One Toy program from source to a running process, annotated with the `-emit` flag that stops at each level and the file that performs each step. |
 
+## Why the design is what it is
+
+[`adr/`](adr/README.md) holds fifteen decision records. The walkthroughs above
+explain how the code works and `../ARCHITECTURE.md` explains what the design is;
+the records explain what else was considered and what each choice cost. Several
+were forced by a compile or link error rather than chosen, and those records say so.
+
 ## Where to start
 
 Reading 01 through 09 in order follows the tutorial and builds up the compiler
