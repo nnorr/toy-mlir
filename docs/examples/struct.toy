@@ -1,0 +1,19 @@
+# Dumped by docs/examples/dump-examples.sh: what happens to a composite type.
+# !toy.struct and toy.struct_access are gone from the -opt dump, folded away
+# before any lowering runs, which is why the affine and LLVM levels look the same
+# as they do for a program with no structs at all. Adapted from the upstream
+# tutorial's reference/tests/Ch7/struct-codegen.toy.
+struct Struct {
+  var a;
+  var b;
+}
+
+def multiply_transpose(Struct value) {
+  return transpose(value.a) * transpose(value.b);
+}
+
+def main() {
+  Struct value = {[[1, 2, 3], [4, 5, 6]], [[1, 2, 3], [4, 5, 6]]};
+  var c = multiply_transpose(value);
+  print(c);
+}

@@ -144,6 +144,21 @@ else()
 endif()
 
 #===----------------------------------------------------------------------===#
+# Committed IR dumps
+#===----------------------------------------------------------------------===#
+
+# docs/examples/dumps/ holds one dump per program per abstraction level, plus the
+# diff that -opt makes at each. They are generated, so they can go stale the
+# moment a pass changes: this regenerates them into a temporary directory and
+# compares, which turns a stale dump into a failing test instead of documentation
+# that is quietly wrong. Regenerate with docs/examples/dump-examples.sh.
+add_test(NAME dumps
+  COMMAND ${PROJECT_SOURCE_DIR}/docs/examples/dump-examples.sh --check
+)
+set_tests_properties(dumps PROPERTIES
+  ENVIRONMENT "TOYC=$<TARGET_FILE:toyc>")
+
+#===----------------------------------------------------------------------===#
 # Differential sweep against upstream
 #===----------------------------------------------------------------------===#
 

@@ -1,0 +1,26 @@
+  Module:
+    Function 
+      Proto 'transpose_transpose' @docs/examples/transpose.toy:5:1
+      Params: [x]
+      Block {
+        Return
+          Call 'transpose' [ @docs/examples/transpose.toy:6:10
+            Call 'transpose' [ @docs/examples/transpose.toy:6:20
+              var: x @docs/examples/transpose.toy:6:30
+            ]
+          ]
+      } // Block
+    Function 
+      Proto 'main' @docs/examples/transpose.toy:9:1
+      Params: []
+      Block {
+        VarDecl a<2, 3> @docs/examples/transpose.toy:10:3
+          Literal: <2, 3>[ <3>[ 1.000000e+00, 2.000000e+00, 3.000000e+00], <3>[ 4.000000e+00, 5.000000e+00, 6.000000e+00]] @docs/examples/transpose.toy:10:17
+        VarDecl b<> @docs/examples/transpose.toy:11:3
+          Call 'transpose_transpose' [ @docs/examples/transpose.toy:11:11
+            var: a @docs/examples/transpose.toy:11:31
+          ]
+        Print [ @docs/examples/transpose.toy:12:3
+          var: b @docs/examples/transpose.toy:12:9
+        ]
+      } // Block

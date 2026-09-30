@@ -135,7 +135,7 @@ MLIR's own options are registered too, so `--mlir-print-ir-after-all`,
 ## Test
 
 ```bash
-ninja -C build && ctest --test-dir build        # 8/8, about 12 s
+ninja -C build && ctest --test-dir build        # 9/9, about 17 s
 ```
 
 | Suite | What it covers |
@@ -145,8 +145,9 @@ ninja -C build && ctest --test-dir build        # 8/8, about 12 s
 | `jit_transpose`, `jit_transpose_opt` | compile and run a program, match its printed values |
 | `error_redeclaration` | an error path, so a driver that stops reporting failures cannot pass |
 | `docs` | runs every command quoted in the markdown and diffs its real output |
+| `dumps` | regenerates the IR dumps in `docs/examples/dumps/` and compares them |
 | `compat` | the differential sweep against `toyc-ch7`; this is the acceptance gate |
-| `compat_fixtures` | the four error paths where this repo deliberately differs |
+| `compat_fixtures` | 10 fixtures, 20 recorded diffs, for the error paths where this repo deliberately differs |
 
 Individual suites:
 

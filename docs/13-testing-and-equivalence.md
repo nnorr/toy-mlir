@@ -23,15 +23,25 @@ Three layers, weakest claim to strongest:
 | lit + FileCheck | each stage emits the IR we intend | 24 files, 48 RUN lines |
 | Differential sweep | the whole compiler equals `toyc-ch7` | 18,480 comparisons |
 
+Two more suites guard the documentation rather than the compiler, on the
+principle that a document making a false claim is a defect: `docs` runs every
+command quoted in the markdown and diffs its output, and `dumps` regenerates the
+IR dumps under `docs/examples/dumps/` and compares them, so a change in a pass
+cannot leave a stale dump behind.
+
 ```console
 $ ctest --test-dir build
 ...
-100% tests passed, 0 tests failed out of 7
-Total Test time (real) =  12.16 sec
+100% tests passed, 0 tests failed out of 9
+Total Test time (real) =  17.28 sec
 ```
 
-The seven: `frontend_unit`, `lit`, `jit_transpose`, `jit_transpose_opt`,
-`error_redeclaration`, `compat`, `compat_fixtures`.
+The nine: `frontend_unit`, `lit`, `jit_transpose`, `jit_transpose_opt`,
+`error_redeclaration`, `docs`, `dumps`, `compat`, `compat_fixtures`.
+
+Note what that `ctest` line is not: `check-docs.py` skips it as a build step, so
+the count and the timing above are the two numbers in this repo that no test
+verifies. They were stale by two suites until someone noticed.
 
 ## Layer 1: unit tests over the front end alone
 
