@@ -40,7 +40,7 @@ The diffs are the fastest way to see what a stage did:
 | `struct.mlir.opt.diff` | Five mentions of `!toy.struct` become none. Folding `struct_access` of a `struct_constant` is what lets the rest of the pipeline ignore the type |
 | `transpose.mlir.opt.diff` | The function body collapses to `toy.return %arg0`, expressible only while the op still means transpose |
 | `trivial_reshape.mlir.opt.diff` | Three reshapes become one constant |
-| `codegen.mlir-affine.opt.diff` | Loop fusion: 4 `affine.for` become 2, and one of three `memref.alloc` disappears |
+| `codegen.mlir-affine.opt.diff` | 4 `affine.for` become 2 and one of three `memref.alloc` disappears, but not by the same pass: fusion merges the loop nests and leaves all three allocations, then scalar replacement removes one. `../../ir-trace.md` separates them per pass |
 | `codegen.llvm.opt.diff` | 186 lines become 44. At O0 the print is a loop with 18 branches and 2 `printf` calls; at O3 there are no branches and the output is 6 `printf` and 4 `putchar` calls |
 
 ## How the pipeline works, not what it produced
@@ -55,7 +55,7 @@ These are for the primary program only.
 | `codegen.pipeline.mlir-affine.txt` | The same for `-emit=mlir-affine -opt` |
 | `codegen.pipeline.mlir-llvm.txt` | The same for `-emit=mlir-llvm -opt`. The three differ, which is the point |
 | `codegen.after-each-pass.mlir` | The IR after every pass. See below |
-| `codegen.pass-statistics.txt` | Per-pass counters. The only one here with a number in it is CSE, at 1 operation eliminated |
+| `codegen.pass-statistics.txt` | Per-pass counters. CSE is the only pass reporting any, and it appears twice with `1 num-cse'd` each: once on the duplicate transpose at the Toy level, once on a duplicate `affine.load` that lowering re-introduced |
 | `codegen.object-symbols.txt` | `nm -g` on a real object file: `T main`, and `U free`, `U malloc`, `U printf` |
 
 ### The after-each-pass dump
