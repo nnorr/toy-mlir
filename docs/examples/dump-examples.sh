@@ -45,9 +45,8 @@ fi
 # Each program earns its place by showing something the others do not. `codegen`
 # is upstream's own running example and is read from reference/ rather than
 # copied, so its source locations match the tutorial's exactly.
-programs=(codegen ex struct transpose trivial_reshape)
+programs=(codegen struct transpose trivial_reshape)
 src_codegen=reference/tests/Ch2/codegen.toy
-src_ex=docs/examples/ex.toy
 src_struct=docs/examples/struct.toy
 src_transpose=docs/examples/transpose.toy
 src_trivial_reshape=reference/tests/Ch3/trivial_reshape.toy

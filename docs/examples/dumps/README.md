@@ -12,7 +12,6 @@ source locations match the tutorial's exactly.
 | Program | Source | Shows |
 | --- | --- | --- |
 | `codegen` | `reference/tests/Ch2/codegen.toy` | The running example. Two calls with the same argument shapes, so specialization is reused |
-| `ex` | [`../ex.toy`](../ex.toy) | The same shape of program, one call |
 | `struct` | [`../struct.toy`](../struct.toy) | A composite type that disappears before lowering |
 | `transpose` | [`../transpose.toy`](../transpose.toy) | `transpose(transpose(x))` folding, on its own |
 | `trivial_reshape` | `reference/tests/Ch3/trivial_reshape.toy` | Three chained reshapes folding to one constant |

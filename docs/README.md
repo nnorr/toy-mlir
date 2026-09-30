@@ -40,7 +40,7 @@ travel together.
 
 ## The same program at every level
 
-[`examples/dumps/`](examples/dumps/README.md) holds the IR for five programs at
+[`examples/dumps/`](examples/dumps/README.md) holds the IR for four programs at
 each abstraction level, with and without `-opt`, plus the diff between the two.
 Reading `codegen.toy-dialect.opt.diff` is the fastest way to see what the Toy-level
 passes do: a function inlined away, reshapes folded, shapes resolved from
