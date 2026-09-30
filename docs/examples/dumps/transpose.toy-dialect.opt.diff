@@ -1,5 +1,5 @@
---- transpose.mlir.txt (no -opt)
-+++ transpose.mlir.opt.txt (-opt)
+--- transpose.toy-dialect.mlir (no -opt)
++++ transpose.toy-dialect.opt.mlir (-opt)
 @@ -1,14 +1,7 @@
  module {
 -  toy.func private @transpose_transpose(%arg0: tensor<*xf64>) -> tensor<*xf64> {

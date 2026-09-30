@@ -1,5 +1,5 @@
---- trivial_reshape.mlir.txt (no -opt)
-+++ trivial_reshape.mlir.opt.txt (-opt)
+--- trivial_reshape.toy-dialect.mlir (no -opt)
++++ trivial_reshape.toy-dialect.opt.mlir (-opt)
 @@ -1,10 +1,7 @@
  module {
    toy.func @main() {

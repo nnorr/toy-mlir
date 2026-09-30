@@ -58,6 +58,27 @@ primary=codegen
 # -opt changes nothing in the AST, so that level is captured once.
 levels_both=(mlir mlir-affine mlir-llvm llvm)
 
+# A dump is named for the level it holds, and its extension says what format that
+# is, so an editor and a file browser both know what they are looking at: .mlir
+# for MLIR, .ll for LLVM IR, .txt only for output that is neither. The -emit flag
+# that produces each one is in dumps/README.md, since the flag names would give
+# files like `codegen.mlir.mlir` and `codegen.mlir-llvm.txt`, both misleading.
+level_stem() {
+  case $1 in
+    mlir)        echo toy-dialect ;;
+    mlir-affine) echo affine ;;
+    mlir-llvm)   echo llvm-dialect ;;
+    llvm)        echo llvm-ir ;;
+    *)           echo "$1" ;;
+  esac
+}
+level_ext() {
+  case $1 in
+    llvm) echo ll ;;   # LLVM IR, not MLIR
+    *)    echo mlir ;;
+  esac
+}
+
 dumps=$root/docs/examples/dumps
 out=$dumps
 scratch=$root/build/dump-scratch
@@ -84,11 +105,13 @@ for prog in "${programs[@]}"; do
   "$toyc" "$src" -emit=ast > "$out/$prog.ast.txt" 2>&1
 
   for level in "${levels_both[@]}"; do
-    "$toyc" "$src" -emit="$level"      > "$out/$prog.$level.txt"     2>&1
-    "$toyc" "$src" -emit="$level" -opt > "$out/$prog.$level.opt.txt" 2>&1
-    emit_diff "$out/$prog.$level.txt" "$out/$prog.$level.opt.txt" \
-              "$prog.$level.txt (no -opt)" "$prog.$level.opt.txt (-opt)" \
-              "$out/$prog.$level.opt.diff"
+    stem=$prog.$(level_stem "$level")
+    ext=$(level_ext "$level")
+    "$toyc" "$src" -emit="$level"      > "$out/$stem.$ext"     2>&1
+    "$toyc" "$src" -emit="$level" -opt > "$out/$stem.opt.$ext" 2>&1
+    emit_diff "$out/$stem.$ext" "$out/$stem.opt.$ext" \
+              "$stem.$ext (no -opt)" "$stem.opt.$ext (-opt)" \
+              "$out/$stem.opt.diff"
   done
 
   # What the program prints when it is actually run, which is the only dump here
@@ -105,16 +128,16 @@ eval "src=\$src_$primary"
 # The pretty format is sugar that ODS defines per operation; the generic form is
 # the structure every MLIR tool actually sees. The diff is the argument.
 "$toyc" "$src" -emit=mlir -opt --mlir-print-op-generic \
-  > "$out/$primary.generic.txt" 2>&1
-emit_diff "$out/$primary.mlir.opt.txt" "$out/$primary.generic.txt" \
-          "$primary.mlir.opt.txt (custom format)" \
-          "$primary.generic.txt (generic format)" \
+  > "$out/$primary.generic.mlir" 2>&1
+emit_diff "$out/$primary.toy-dialect.opt.mlir" "$out/$primary.generic.mlir" \
+          "$primary.toy-dialect.opt.mlir (custom format)" \
+          "$primary.generic.mlir (generic format)" \
           "$out/$primary.generic.diff"
 
 # Locations ride on every operation from MLIRGen onward. They are not printed
 # unless asked, which is why every other dump here is path-independent.
 "$toyc" "$src" -emit=mlir --mlir-print-debuginfo \
-  > "$out/$primary.locations.txt" 2>&1
+  > "$out/$primary.locations.mlir" 2>&1
 
 # The same driver builds three different pipelines depending on how far it is
 # asked to go. Printed as a string, without compiling anything.

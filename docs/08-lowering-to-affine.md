@@ -209,8 +209,8 @@ value would mean a function other than `main` survived.
 ## Try it
 
 The excerpts here are abridged to keep the interesting lines together. For the
-whole level unabridged, `docs/examples/dumps/codegen.mlir-affine.txt` is this
-stage in full for the same program, and `codegen.mlir-affine.opt.diff` is what
+whole level unabridged, `docs/examples/dumps/codegen.affine.mlir` is this
+stage in full for the same program, and `codegen.affine.opt.diff` is what
 loop fusion and scalar replacement change.
 
 The `// the transpose` and `// the multiply` comments below are added here to mark

@@ -1,5 +1,5 @@
---- struct.mlir-llvm.txt (no -opt)
-+++ struct.mlir-llvm.opt.txt (-opt)
+--- codegen.llvm-dialect.mlir (no -opt)
++++ codegen.llvm-dialect.opt.mlir (-opt)
 @@ -28,8 +28,8 @@
      %20 = llvm.insertvalue %7, %19[3, 1] : !llvm.struct<(ptr, ptr, i64, array<2 x i64>, array<2 x i64>)> 
      %21 = llvm.insertvalue %7, %20[4, 0] : !llvm.struct<(ptr, ptr, i64, array<2 x i64>, array<2 x i64>)> 

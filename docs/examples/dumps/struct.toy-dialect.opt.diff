@@ -1,5 +1,5 @@
---- struct.mlir.txt (no -opt)
-+++ struct.mlir.opt.txt (-opt)
+--- struct.toy-dialect.mlir (no -opt)
++++ struct.toy-dialect.opt.mlir (-opt)
 @@ -1,16 +1,9 @@
  module {
 -  toy.func private @multiply_transpose(%arg0: !toy.struct<tensor<*xf64>, tensor<*xf64>>) -> tensor<*xf64> {

@@ -1,5 +1,5 @@
---- ex.mlir-affine.txt (no -opt)
-+++ ex.mlir-affine.opt.txt (-opt)
+--- codegen.affine.mlir (no -opt)
++++ codegen.affine.opt.mlir (-opt)
 @@ -7,30 +7,22 @@
      %cst_3 = arith.constant 2.000000e+00 : f64
      %cst_4 = arith.constant 1.000000e+00 : f64

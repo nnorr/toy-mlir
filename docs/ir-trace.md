@@ -284,9 +284,9 @@ replacement removed the buffer and left two loops. The end-to-end effect on loop
 count is visible without reading the trace at all:
 
 ```console
-$ grep -c 'affine.for' docs/examples/dumps/codegen.mlir-affine.txt docs/examples/dumps/codegen.mlir-affine.opt.txt
-docs/examples/dumps/codegen.mlir-affine.txt:4
-docs/examples/dumps/codegen.mlir-affine.opt.txt:2
+$ grep -c 'affine.for' docs/examples/dumps/codegen.affine.mlir docs/examples/dumps/codegen.affine.opt.mlir
+docs/examples/dumps/codegen.affine.mlir:4
+docs/examples/dumps/codegen.affine.opt.mlir:2
 ```
 
 ### The counts, per boundary
@@ -306,14 +306,14 @@ Counted from the dump with `grep`, over the five banners where they move:
 The trace stops at the affine level because that is where `-emit=mlir-affine`
 stops. The dumps continue, and the two worth showing are short.
 
-`codegen.mlir-llvm.txt` is the same program with nothing but the LLVM dialect
+`codegen.llvm-dialect.mlir` is the same program with nothing but the LLVM dialect
 left. The memref that was one value becomes a five-field descriptor,
 `struct<(ptr, ptr, i64, array<2 x i64>, array<2 x i64>)>`: allocated pointer,
 aligned pointer, offset, sizes, strides. `toy.print`, the operation that
 survived banner 9, finally becomes a loop calling `printf`. [09. Lowering to
 LLVM](09-lowering-to-llvm.md) has the details.
 
-`codegen.llvm.txt` and `codegen.llvm.opt.txt` are LLVM IR before and after
+`codegen.llvm-ir.ll` and `codegen.llvm-ir.opt.ll` are LLVM IR before and after
 LLVM's own optimizer, and the difference is the most quotable number in the set:
 186 lines with 18 branches and 2 `printf` calls become 44 lines with no branches
 at all, 6 `printf` calls and 4 `putchar` calls. The loops are gone because every

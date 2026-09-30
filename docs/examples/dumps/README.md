@@ -25,10 +25,10 @@ captured once.
 | File | Level |
 | --- | --- |
 | `<prog>.ast.txt` | The parse tree |
-| `<prog>.mlir.txt` | Toy dialect, shapes still unranked where they came from a function |
-| `<prog>.mlir-affine.txt` | Affine loops over memrefs, with `toy.print` still standing |
-| `<prog>.mlir-llvm.txt` | The LLVM dialect, nothing else left |
-| `<prog>.llvm.txt` | LLVM IR, out of MLIR entirely |
+| `<prog>.toy-dialect.mlir` | Toy dialect, shapes still unranked where they came from a function |
+| `<prog>.affine.mlir` | Affine loops over memrefs, with `toy.print` still standing |
+| `<prog>.llvm-dialect.mlir` | The LLVM dialect, nothing else left |
+| `<prog>.llvm-ir.ll` | LLVM IR, out of MLIR entirely |
 | `<prog>.jit.txt` | What the program prints when it runs |
 
 Each level except the AST also has `.opt.txt` and an `.opt.diff` between the two.
@@ -36,12 +36,12 @@ The diffs are the fastest way to see what a stage did:
 
 | Diff | What it shows |
 | --- | --- |
-| `codegen.mlir.opt.diff` | Inlining removes the function, reshapes fold, shapes resolve from `tensor<*xf64>` to `tensor<3x2xf64>`, and CSE collapses two transposes |
-| `struct.mlir.opt.diff` | Five mentions of `!toy.struct` become none. Folding `struct_access` of a `struct_constant` is what lets the rest of the pipeline ignore the type |
-| `transpose.mlir.opt.diff` | The function body collapses to `toy.return %arg0`, expressible only while the op still means transpose |
-| `trivial_reshape.mlir.opt.diff` | Three reshapes become one constant |
-| `codegen.mlir-affine.opt.diff` | 4 `affine.for` become 2 and one of three `memref.alloc` disappears, but not by the same pass: fusion merges the loop nests and leaves all three allocations, then scalar replacement removes one. `../../ir-trace.md` separates them per pass |
-| `codegen.llvm.opt.diff` | 186 lines become 44. At O0 the print is a loop with 18 branches and 2 `printf` calls; at O3 there are no branches and the output is 6 `printf` and 4 `putchar` calls |
+| `codegen.toy-dialect.opt.diff` | Inlining removes the function, reshapes fold, shapes resolve from `tensor<*xf64>` to `tensor<3x2xf64>`, and CSE collapses two transposes |
+| `struct.toy-dialect.opt.diff` | Five mentions of `!toy.struct` become none. Folding `struct_access` of a `struct_constant` is what lets the rest of the pipeline ignore the type |
+| `transpose.toy-dialect.opt.diff` | The function body collapses to `toy.return %arg0`, expressible only while the op still means transpose |
+| `trivial_reshape.toy-dialect.opt.diff` | Three reshapes become one constant |
+| `codegen.affine.opt.diff` | 4 `affine.for` become 2 and one of three `memref.alloc` disappears, but not by the same pass: fusion merges the loop nests and leaves all three allocations, then scalar replacement removes one. `../../ir-trace.md` separates them per pass |
+| `codegen.llvm-ir.opt.diff` | 186 lines become 44. At O0 the print is a loop with 18 branches and 2 `printf` calls; at O3 there are no branches and the output is 6 `printf` and 4 `putchar` calls |
 
 ## How the pipeline works, not what it produced
 
@@ -49,8 +49,8 @@ These are for the primary program only.
 
 | File | Shows |
 | --- | --- |
-| `codegen.generic.txt` | The same IR in generic form, and `codegen.generic.diff` against the pretty form. The pretty syntax is sugar each operation defines in ODS; the generic form is the structure every MLIR tool sees |
-| `codegen.locations.txt` | `--mlir-print-debuginfo`. Every operation carries a location from MLIRGen onward, and they are not printed unless asked, which is why the other dumps hold no paths |
+| `codegen.generic.mlir` | The same IR in generic form, and `codegen.generic.diff` against the pretty form. The pretty syntax is sugar each operation defines in ODS; the generic form is the structure every MLIR tool sees |
+| `codegen.locations.mlir` | `--mlir-print-debuginfo`. Every operation carries a location from MLIRGen onward, and they are not printed unless asked, which is why the other dumps hold no paths |
 | `codegen.pipeline.mlir.txt` | The pass pipeline as a string, for `-emit=mlir -opt` |
 | `codegen.pipeline.mlir-affine.txt` | The same for `-emit=mlir-affine -opt` |
 | `codegen.pipeline.mlir-llvm.txt` | The same for `-emit=mlir-llvm -opt`. The three differ, which is the point |
@@ -76,7 +76,7 @@ These are for the primary program only.
 | 12 | `AffineLoopFusion` | Two loop nests merge |
 | 13 | `AffineScalarReplacement` | |
 
-Banner 9 and the `codegen.mlir-affine.opt.diff` above are the two dumps that
+Banner 9 and the `codegen.affine.opt.diff` above are the two dumps that
 carry partial conversion, bufferization and fusion between them.
 
 ## The scf and cf steps

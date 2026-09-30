@@ -1,5 +1,5 @@
---- codegen.mlir.opt.txt (custom format)
-+++ codegen.generic.txt (generic format)
+--- codegen.toy-dialect.opt.mlir (custom format)
++++ codegen.generic.mlir (generic format)
 @@ -1,9 +1,9 @@
 -module {
 -  toy.func @main() {

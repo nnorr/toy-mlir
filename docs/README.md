@@ -42,7 +42,7 @@ travel together.
 
 [`examples/dumps/`](examples/dumps/README.md) holds the IR for five programs at
 each abstraction level, with and without `-opt`, plus the diff between the two.
-Reading `codegen.mlir.opt.diff` is the fastest way to see what the Toy-level
+Reading `codegen.toy-dialect.opt.diff` is the fastest way to see what the Toy-level
 passes do: a function inlined away, reshapes folded, shapes resolved from
 `tensor<*xf64>` to `tensor<3x2xf64>`, and two transposes collapsed into one.
 [ir-trace.md](ir-trace.md) walks the same program pass by pass.
