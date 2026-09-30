@@ -12,6 +12,7 @@ upstream source for each chapter is under `reference/Ch1` through
 
 | Document | Files it covers | Upstream chapter |
 | --- | --- | --- |
+| [00. MLIR basics](00-mlir-basics.md) | none; MLIR itself | none, prerequisite |
 | [01. Lexer](01-lexer.md) | `Lexer.{h,cpp}` | Ch1, the Toy language and its lexer |
 | [02. AST](02-ast.md) | `AST.h`, `ASTVisitor.h`, `ASTDumper.{h,cpp}` | Ch1 |
 | [03. Parser](03-parser.md) | `Parser.{h,cpp}` | Ch1 |
@@ -40,6 +41,11 @@ travel together.
 | [pipeline.html](pipeline.html) | One Toy program from source to a running process, annotated with the `-emit` flag that stops at each level and the file that performs each step. |
 
 ## Where to start
+
+If you have never used MLIR, start at [00-mlir-basics.md](00-mlir-basics.md). It
+covers the IR structure, how to read the textual format, and the words the rest of
+these documents use without explaining. Anyone who has written a dialect before
+can skip it.
 
 Reading 01 through 09 in order follows the tutorial and builds up the compiler
 one layer at a time.
