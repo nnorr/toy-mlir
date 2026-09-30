@@ -38,6 +38,15 @@ travel together.
 | [architecture.html](architecture.html) | The four libraries and which way they link, with the toolchain and the equivalence gate around them. Its boxes link to the files they stand for. |
 | [pipeline.html](pipeline.html) | One Toy program from source to a running process, annotated with the `-emit` flag that stops at each level and the file that performs each step. |
 
+## Cross-cutting documents
+
+The numbered series above follows one file each. These cut across several files,
+so they are not part of that numbering.
+
+| Document | Covers |
+| --- | --- |
+| [Rewrite and conversion](rewrite-vs-conversion.md) | The four mechanisms that change IR, side by side: folds, canonicalization patterns, hand-written passes, and dialect conversion. Where each belongs, and why partial and full conversion differ |
+
 ## Where to start
 
 Reading 01 through 09 in order follows the tutorial and builds up the compiler
