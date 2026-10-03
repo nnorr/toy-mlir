@@ -187,8 +187,8 @@ so one survives:
   %2 = toy.mul %1, %1 : tensor<3x2xf64>
 ```
 
-`docs/examples/dumps/codegen.pass-statistics.txt` records this as `1 num-cse'd`
-under the `toy.func` pipeline. `toy.mul %1, %1` multiplies a value by itself,
+`--mlir-pass-statistics` records this as `1 num-cse'd` under the `toy.func`
+pipeline. `toy.mul %1, %1` multiplies a value by itself,
 which is what the source said: `transpose(b) * transpose(a)` where `a` and `b`
 are the same constant.
 
@@ -317,9 +317,9 @@ LLVM](09-lowering-to-llvm.md) has the details.
 LLVM's own optimizer, and the difference is the most quotable number in the set:
 186 lines with 18 branches and 2 `printf` calls become 44 lines with no branches
 at all, 6 `printf` calls and 4 `putchar` calls. The loops are gone because every
-value was known at compile time. What the program prints is in
-`codegen.jit.txt`, and `codegen.object-symbols.txt` shows the same program as a
-real object file.
+value was known at compile time. What the program prints, and what it looks like as a
+real object file, are each one command away: `-emit=jit -opt`, and `-c` followed
+by `nm -g`.
 
 ## Regenerating and caveats
 

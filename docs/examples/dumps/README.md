@@ -18,19 +18,17 @@ source locations match the tutorial's exactly.
 
 ## Levels
 
-Every program, every level. `-opt` does not affect the AST, so that one is
-captured once.
+Every program, every level. Only IR is kept here, so the levels start at the Toy
+dialect: the AST is not IR, and neither is what the program prints when it runs.
 
 | File | Level |
 | --- | --- |
-| `<prog>.ast.txt` | The parse tree |
 | `<prog>.toy-dialect.mlir` | Toy dialect, shapes still unranked where they came from a function |
 | `<prog>.affine.mlir` | Affine loops over memrefs, with `toy.print` still standing |
 | `<prog>.llvm-dialect.mlir` | The LLVM dialect, nothing else left |
 | `<prog>.llvm-ir.ll` | LLVM IR, out of MLIR entirely |
-| `<prog>.jit.txt` | What the program prints when it runs |
 
-Each level except the AST also has `.opt.txt` and an `.opt.diff` between the two.
+Each level also has a `.opt.` variant and an `.opt.diff` between the two.
 The diffs are the fastest way to see what a stage did:
 
 | Diff | What it shows |
@@ -50,12 +48,7 @@ These are for the primary program only.
 | --- | --- |
 | `codegen.generic.mlir` | The same IR in generic form, and `codegen.generic.diff` against the pretty form. The pretty syntax is sugar each operation defines in ODS; the generic form is the structure every MLIR tool sees |
 | `codegen.locations.mlir` | `--mlir-print-debuginfo`. Every operation carries a location from MLIRGen onward, and they are not printed unless asked, which is why the other dumps hold no paths |
-| `codegen.pipeline.mlir.txt` | The pass pipeline as a string, for `-emit=mlir -opt` |
-| `codegen.pipeline.mlir-affine.txt` | The same for `-emit=mlir-affine -opt` |
-| `codegen.pipeline.mlir-llvm.txt` | The same for `-emit=mlir-llvm -opt`. The three differ, which is the point |
 | `codegen.after-each-pass.mlir` | The IR after every pass. See below |
-| `codegen.pass-statistics.txt` | Per-pass counters. CSE is the only pass reporting any, and it appears twice with `1 num-cse'd` each: once on the duplicate transpose at the Toy level, once on a duplicate `affine.load` that lowering re-introduced |
-| `codegen.object-symbols.txt` | `nm -g` on a real object file: `T main`, and `U free`, `U malloc`, `U printf` |
 
 ### The after-each-pass dump
 
@@ -92,6 +85,25 @@ it by driving `mlir-opt` by hand:
 
 This section needs the MLIR tools, so the script skips it when `mlir-opt` is
 absent and `--check` then leaves the three files out of the comparison.
+
+## What is deliberately not here
+
+Only IR is committed. Everything below is one command away, and none of it is IR,
+so keeping a copy would mean keeping it correct for no reading benefit. Run from
+the repo root with `reference/tests/Ch2/codegen.toy` as the input:
+
+| Instead of a file | Run |
+| --- | --- |
+| the parse tree | `build/bin/toyc <input> -emit=ast` |
+| what the program prints | `build/bin/toyc <input> -emit=jit -opt` |
+| the pass pipeline as a string | `build/bin/toyc <input> -emit=mlir-affine -opt --print-pipeline` |
+| per-pass counters | `build/bin/toyc <input> -emit=mlir-affine -opt --mlir-pass-statistics` |
+| an object file's symbols | `build/bin/toyc <input> -c -o prog.o && nm -g prog.o` |
+
+The counters are worth one note, since a document cites them: CSE is the only
+pass that reports any, and it reports `1 num-cse'd` twice, once on the duplicate
+transpose at the Toy level and once on a duplicate `affine.load` that lowering
+re-introduced.
 
 ## Generated code is not here
 

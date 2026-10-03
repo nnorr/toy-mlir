@@ -11,8 +11,12 @@
 #
 # Beyond the levels, the primary program also gets the views that explain how the
 # pipeline works rather than what it produced: the generic form beside the pretty
-# one, locations, the pass pipeline as a string, the IR after every pass, pass
-# statistics, and the symbols of a real object file.
+# one, locations, and the IR after every pass.
+#
+# Only IR is kept. The AST dump, the program's own output, the pass pipeline as a
+# string, pass statistics and an object file's symbol table are all reachable in
+# one command each, and none of them is IR, so none is committed. The commands
+# are in dumps/README.md.
 #
 # Stability is the constraint on everything here, since every file is compared
 # byte for byte. Dumps are produced from the repo root with relative input paths,
@@ -80,14 +84,11 @@ level_ext() {
 
 dumps=$root/docs/examples/dumps
 out=$dumps
-scratch=$root/build/dump-scratch
 if (( check )); then
   out=$(mktemp -d)
-  trap 'rm -rf "$out" "$scratch"' EXIT
-else
-  trap 'rm -rf "$scratch"' EXIT
+  trap 'rm -rf "$out"' EXIT
 fi
-mkdir -p "$out" "$scratch"
+mkdir -p "$out"
 
 # Relative paths, run from the repo root, so nothing absolute reaches a dump.
 cd "$root"
@@ -101,8 +102,6 @@ emit_diff() { # left right label_left label_right target
 for prog in "${programs[@]}"; do
   eval "src=\$src_$prog"
 
-  "$toyc" "$src" -emit=ast > "$out/$prog.ast.txt" 2>&1
-
   for level in "${levels_both[@]}"; do
     stem=$prog.$(level_stem "$level")
     ext=$(level_ext "$level")
@@ -112,10 +111,6 @@ for prog in "${programs[@]}"; do
               "$stem.$ext (no -opt)" "$stem.opt.$ext (-opt)" \
               "$out/$stem.opt.diff"
   done
-
-  # What the program prints when it is actually run, which is the only dump here
-  # that is an answer rather than a representation.
-  "$toyc" "$src" -emit=jit -opt > "$out/$prog.jit.txt" 2>&1
 done
 
 #===----------------------------------------------------------------------===#
@@ -138,26 +133,10 @@ emit_diff "$out/$primary.toy-dialect.opt.mlir" "$out/$primary.generic.mlir" \
 "$toyc" "$src" -emit=mlir --mlir-print-debuginfo \
   > "$out/$primary.locations.mlir" 2>&1
 
-# The same driver builds three different pipelines depending on how far it is
-# asked to go. Printed as a string, without compiling anything.
-for stage in mlir mlir-affine mlir-llvm; do
-  "$toyc" "$src" -emit="$stage" -opt --print-pipeline \
-    > "$out/$primary.pipeline.$stage.txt" 2>&1
-done
-
 # The most useful dump in the set: the IR after every pass, kept whole. Read it
 # with docs/examples/dumps/README.md, which says what each banner changed.
 "$toyc" "$src" -emit=mlir-affine -opt --mlir-print-ir-after-all \
   > "$out/$primary.after-each-pass.mlir" 2>&1
-
-# Counters only, no timings, so this one is safe to commit.
-"$toyc" "$src" -emit=mlir-affine -opt --mlir-pass-statistics \
-  > "$out/$primary.pass-statistics.txt" 2>&1
-
-# The object file proves the lowering reaches a linkable artifact; its symbol
-# table is the part worth reading, so the object itself is discarded.
-"$toyc" "$src" -c -o "$scratch/$primary.o" > "$scratch/c.log" 2>&1
-nm -g "$scratch/$primary.o" > "$out/$primary.object-symbols.txt"
 
 #===----------------------------------------------------------------------===#
 # Optional: the scf and cf steps that the full conversion hides

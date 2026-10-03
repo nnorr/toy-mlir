@@ -1,4 +1,0 @@
-                 U free
-0000000000000000 T main
-                 U malloc
-                 U printf
